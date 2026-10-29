@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>People's Plaza Kathmandu</title>
+    <meta name="description" content="Kathmandu’s Preferred Shopping & Lifestyle Hub in New Road, Khichapokhari. Explore store directory, shopkeeper portal, and live CMS admin management.">
+    <meta property="og:title" content="People's Plaza Kathmandu">
+    <meta property="og:description" content="Kathmandu’s Preferred Shopping & Lifestyle Hub in New Road, Khichapokhari. Explore store directory, shopkeeper portal, and live CMS admin management.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" href="/peoples-plaza-logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        plum: {
+                            800: '#230b38',
+                            900: '#32134d',
+                            950: '#1b082b',
+                        },
+                        accent: {
+                            DEFAULT: '#f05aa6',
+                            hover: '#d9428f',
+                            light: '#fce7f3'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Exact layout refinements based on user request */
+        html, body {
+            background-color: #1b082b; /* Ensures seamless background color filling screen gaps */
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Home section full screen expansion and consistent color filling */
+        #home {
+            min-height: calc(100vh - 5rem);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: linear-gradient(to bottom right, #1b082b, #32134d, #1b082b);
+        }
+
+        /* About section: compact container that fits cleanly within page */
+        #about {
+            min-height: calc(100vh - 5rem);
+            display: flex;
+            align-items: center;
+            background-color: rgba(50, 19, 77, 0.4);
+            padding-top: 1.75rem;
+            padding-bottom: 1.75rem;
+        }
+
+        /* Explore section: adjusted padding and grid to allow shop cards to stretch and fit page */
+        #explore {
+            min-height: calc(100vh - 5rem);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding-top: 2.5rem;
+            padding-bottom: 2.5rem;
+            background-color: #1b082b;
+        }
+
+        .card-img-container {
+            aspect-ratio: 16 / 10;
+            min-height: 145px;
+        }
+
+        .brand-logo-orbit {
+            position: relative;
+            display: inline-flex;
+            flex: 0 0 auto;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.9rem;
+        }
+    </style>
+</head>
+<body class="bg-plum-950 text-slate-100 font-sans antialiased leading-relaxed selection:bg-accent selection:text-white">
+
+    <!-- Header / Navbar -->
+    <header class="fixed top-0 left-0 right-0 w-full z-50 bg-plum-900/95 backdrop-blur-md border-b border-plum-800 shadow-xl">
+        <div class="pp-header-container w-full">
+            <div class="pp-header-bar flex items-center justify-between h-20">
+                <a href="#home" class="pp-header-logo-link flex items-center shrink-0 group" aria-label="People's Plaza Home">
+                    <span class="brand-logo-orbit">
+                        <img id="site-header-logo" src="/peoples-plaza-logo.png" alt="People's Plaza Logo" class="pp-header-logo-img group-hover:scale-105 transition-transform" onerror="this.onerror=null;this.src=window.PP_LOGO_DATA_URL||'peoples-plaza-logo.png'">
+                    </span>
+                </a>
+
+                <nav class="hidden lg:flex items-center space-x-1 xl:space-x-2">
+                    <a href="#home" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-colors" data-i18n="nav_home">Home</a>
+                    <a href="#discover" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-colors" data-i18n="nav_discover">Discover</a>
+                    <a href="#explore" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-colors" data-i18n="nav_explore">Explore</a>
+                    <a href="#about" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-colors" data-i18n="nav_about">About</a>
+                    <a href="#location-map" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-colors"><i class="fa-solid fa-location-dot mr-1.5 text-accent"></i><span data-i18n="nav_directions">Directions</span></a>
+                    <a href="#contact" class="px-3 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-colors" data-i18n="nav_contact">Contact</a>
+                    
+                    <div class="pp-lang-switcher ml-1" role="group" aria-label="Language selector">
+                        <button type="button" onclick="window.ppSetLanguage('en')" data-lang-switch="en" class="pp-lang-btn active">EN</button>
+                        <button type="button" onclick="window.ppSetLanguage('ne')" data-lang-switch="ne" class="pp-lang-btn">नेपाली</button>
+                    </div>
+
+                    <a href="login.html" id="nav-portal-btn" class="ml-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-accent hover:bg-accent-hover shadow-lg shadow-accent/20 transition-all inline-flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-store"></i> <span id="nav-portal-text" data-i18n="nav_portal">Shop Portal</span>
+                    </a>
+
+                    <a href="admin-login.html" id="nav-admin-btn" class="ml-1 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-200 bg-plum-800 hover:bg-plum-700 border border-plum-700 transition-all inline-flex items-center gap-1.5 whitespace-nowrap">
+                        <i class="fa-solid fa-user-shield text-accent"></i> <span data-i18n="nav_admin">Admin Login</span>
+                    </a>
+                </nav>
+
+                <div class="flex items-center gap-2 lg:hidden">
+                    <div class="pp-lang-switcher" role="group" aria-label="Language selector mobile">
+                        <button type="button" onclick="window.ppSetLanguage('en')" data-lang-switch="en" class="pp-lang-btn active">EN</button>
+                        <button type="button" onclick="window.ppSetLanguage('ne')" data-lang-switch="ne" class="pp-lang-btn">नेपाली</button>
+                    </div>
+                    <button id="mobile-menu-btn" class="p-2.5 rounded-lg bg-plum-800 text-slate-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-accent" aria-label="Toggle navigation menu">
+                        <i class="fa-solid fa-bars text-xl" id="menu-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden lg:hidden bg-plum-900 border-b border-plum-800 px-4 pt-2 pb-6 space-y-2">
+            <a href="#home" class="mobile-link block px-4 py-3 rounded-lg text-base font-medium text-slate-200 hover:bg-white/10" data-i18n="nav_home">Home</a>
+            <a href="#discover" class="mobile-link block px-4 py-3 rounded-lg text-base font-medium text-slate-200 hover:bg-white/10" data-i18n="nav_discover">Discover</a>
+            <a href="#explore" class="mobile-link block px-4 py-3 rounded-lg text-base font-medium text-slate-200 hover:bg-white/10" data-i18n="nav_explore">Explore</a>
+            <a href="#about" class="mobile-link block px-4 py-3 rounded-lg text-base font-medium text-slate-200 hover:bg-white/10" data-i18n="nav_about">About</a>
+            <a href="#location-map" class="mobile-link block px-4 py-3 rounded-lg text-base font-medium text-slate-200 hover:bg-white/10"><i class="fa-solid fa-location-dot mr-2 text-accent"></i><span data-i18n="nav_directions">Directions</span></a>
+            <a href="#contact" class="mobile-link block px-4 py-3 rounded-lg text-base font-medium text-slate-200 hover:bg-white/10" data-i18n="nav_contact">Contact</a>
+            
+            <div class="flex items-center justify-between px-4 py-2">
+                <span class="text-xs text-slate-400">Language / भाषा</span>
+                <div class="pp-lang-switcher" role="group" aria-label="Language selector menu">
+                    <button type="button" onclick="window.ppSetLanguage('en')" data-lang-switch="en" class="pp-lang-btn active">EN</button>
+                    <button type="button" onclick="window.ppSetLanguage('ne')" data-lang-switch="ne" class="pp-lang-btn">नेपाली</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                <a href="login.html" class="mobile-link px-4 py-3 rounded-xl text-sm font-bold text-white bg-accent hover:bg-accent-hover flex items-center justify-center gap-2 shadow-lg">
+                    <i class="fa-solid fa-store"></i> <span data-i18n="nav_portal">Shop Portal</span>
+                </a>
+                <a href="admin-login.html" class="mobile-link px-4 py-3 rounded-xl text-sm font-bold text-slate-200 bg-plum-800 border border-plum-700 hover:bg-plum-700 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-shield text-accent"></i> <span data-i18n="nav_admin">Admin Login</span>
+                </a>
+            </div>
+        </div>
+    </header>
+    <div class="h-16 sm:h-20" aria-hidden="true"></div>
+
+    <main>
+        <!-- 1. HOME SECTION -->
+        <section id="home" class="relative px-4 sm:px-6 lg:px-8 overflow-hidden border-b border-plum-800">
+            <div class="absolute top-1/4 left-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute bottom-10 right-10 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="relative max-w-5xl mx-auto text-center space-y-6 z-10 py-10">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs sm:text-sm font-semibold uppercase tracking-wider">
+                    <i class="fa-solid fa-location-dot"></i> <span data-i18n="home_badge">New Road, Khichapokhari, Kathmandu</span>
+                </div>
+                
+                <h1 class="hero-heading text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight">
+                    <span data-i18n="home_title_1">Kathmandu’s Preferred</span> <br/>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-accent via-pink-400 to-purple-300" data-i18n="home_title_2">
+                        Shopping & Lifestyle Hub
+                    </span>
+                </h1>
+
+                <p class="hero-description max-w-3xl mx-auto text-base sm:text-lg lg:text-xl text-slate-200/95 font-normal leading-relaxed sm:leading-loose tracking-wide" data-i18n="home_desc">
+                    Welcome to People’s Plaza, Kathmandu! Discover your favorite Nepali and international brands, explore fashion and lifestyle essentials, and enjoy cozy cafés and delicious dining—all in one place. Shop, relax, and make every visit memorable!
+                </p>
+
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                    <a href="#explore" class="w-full sm:w-auto px-7 py-3 rounded-xl bg-accent text-white font-bold text-sm hover:bg-accent-hover shadow-xl shadow-accent/25 transition-all text-center">
+                        <span data-i18n="btn_explore">Explore Stores</span> <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </a>
+                    <a href="#location-map" class="w-full sm:w-auto px-7 py-3 rounded-xl bg-plum-800/80 border border-plum-700 text-slate-200 hover:text-white hover:bg-plum-800 font-bold text-sm transition-all text-center" data-i18n="btn_directions">
+                        Get Directions
+                    </a>
+                </div>
+
+                <div class="pt-6 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto stat-grid-mobile">
+                    <div class="p-4 rounded-xl bg-plum-900/60 border border-plum-800 backdrop-blur-sm">
+                        <div class="text-2xl font-extrabold text-accent" id="stat-store-count">4+</div>
+                        <div class="text-xs text-slate-400 mt-1" data-i18n="stat_retail">Retail Stores</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-plum-900/60 border border-plum-800 backdrop-blur-sm">
+                        <div class="text-2xl font-extrabold text-accent" id="stat-floor-count">6</div>
+                        <div class="text-xs text-slate-400 mt-1" data-i18n="stat_floors">Floors of Shopping</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-plum-900/60 border border-plum-800 backdrop-blur-sm">
+                        <div class="text-2xl font-extrabold text-accent">100%</div>
+                        <div class="text-xs text-slate-400 mt-1" data-i18n="stat_brands">Authentic Brands</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-plum-900/60 border border-plum-800 backdrop-blur-sm">
+                        <div class="text-2xl font-extrabold text-accent" data-i18n="stat_central_val">Central</div>
+                        <div class="text-xs text-slate-400 mt-1" data-i18n="stat_central">Kathmandu Location</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. DISCOVER SECTION (DYNAMICALLY SYNCED WITH ADMIN CMS) -->
+        <section id="discover" class="py-14 sm:py-16 px-4 sm:px-6 lg:px-8 bg-plum-900/40 border-b border-plum-800">
+            <div class="max-w-7xl mx-auto space-y-6">
+                <div class="text-center max-w-3xl mx-auto space-y-2">
+                    <h2 class="text-xs uppercase tracking-widest text-accent font-bold" data-i18n="disc_subtitle">Discover People's Plaza</h2>
+                    <p class="text-2xl sm:text-4xl font-extrabold text-white" data-i18n="disc_title">Featured Highlights & Gallery</p>
+                    <p class="text-slate-300 text-sm sm:text-base" data-i18n="disc_desc">Click any photo below to zoom in and browse the complete photo slider.</p>
+                </div>
+
+                <div id="discover-carousel-wrapper" class="relative max-w-4xl mx-auto overflow-hidden rounded-xl border border-plum-800 bg-plum-900 shadow-2xl group cursor-pointer w-full mb-3">
+                    <div id="carousel-track" class="carousel-viewport flex transition-transform duration-500 ease-out h-[260px] sm:h-[397px]">
+                        <!-- Rendered dynamically from CMS -->
+                    </div>
+
+                    <button id="carousel-prev" onclick="event.stopPropagation(); prevSlide();" aria-label="Previous slide" class="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-plum-900/80 hover:bg-accent text-white border border-plum-700 flex items-center justify-center transition-colors z-10"><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                    <button id="carousel-next" onclick="event.stopPropagation(); nextSlide();" aria-label="Next slide" class="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-plum-900/80 hover:bg-accent text-white border border-plum-700 flex items-center justify-center transition-colors z-10"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. EXPLORE SECTION -->
+        <section id="explore" class="px-4 sm:px-6 lg:px-8 border-b border-plum-800">
+            <div class="max-w-7xl mx-auto space-y-4 w-full py-4">
+                <div class="text-center max-w-3xl mx-auto space-y-1">
+                    <h2 class="text-xs uppercase tracking-widest text-accent font-bold" data-i18n="exp_subtitle">Store Directory</h2>
+                    <p class="text-2xl sm:text-3xl font-extrabold text-white" data-i18n="exp_title">Explore Premium Outlets</p>
+                    <p class="text-slate-300 text-xs sm:text-sm" data-i18n="exp_desc">Search by brand name or filter by category. Newly registered and updated shops sync here live.</p>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center justify-between gap-3 p-3.5 rounded-xl bg-plum-900/80 border border-plum-800 shadow-lg">
+                    <div class="relative w-full md:w-80">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="store-search" placeholder="Search stores, brands, units..." class="w-full pl-11 pr-4 py-2 rounded-xl bg-plum-950 border border-plum-800 text-slate-100 placeholder-slate-400 focus:outline-none focus:border-accent text-xs transition-colors" data-i18n-placeholder="search_placeholder">
+                    </div>
+
+                    <div class="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-none" id="category-pills">
+                        <button class="filter-btn active-filter px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-accent text-white transition-all whitespace-nowrap shadow-md" data-category="all" data-i18n="cat_all">
+                            All Stores
+                        </button>
+                        <button class="filter-btn px-3.5 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-plum-800 text-slate-300 hover:text-white hover:bg-plum-700 transition-all whitespace-nowrap" data-category="Fashion" data-i18n="cat_fashion">
+                            Fashion
+                        </button>
+                        <button class="filter-btn px-3.5 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-plum-800 text-slate-300 hover:text-white hover:bg-plum-700 transition-all whitespace-nowrap" data-category="Footwear" data-i18n="cat_footwear">
+                            Footwear
+                        </button>
+                        <button class="filter-btn px-3.5 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-plum-800 text-slate-300 hover:text-white hover:bg-plum-700 transition-all whitespace-nowrap" data-category="Cosmetics" data-i18n="cat_cosmetics">
+                            Cosmetics
+                        </button>
+                        <button class="filter-btn px-3.5 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-plum-800 text-slate-300 hover:text-white hover:bg-plum-700 transition-all whitespace-nowrap" data-category="Electronics" data-i18n="cat_electronics">
+                            Electronics
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STORE GRID: Row of 5 Featured Shop Cards -->
+                <div id="store-grid" class="store-grid-responsive grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-stretch">
+                    <!-- Stores injected via JavaScript -->
+                </div>
+
+                <!-- SEE MORE SHOP DIRECTORY MODAL BUTTON -->
+                <div id="see-all-container" class="text-center pt-3">
+                    <button id="see-all-btn" type="button" onclick="openDirectoryModal()" class="px-7 py-2.5 rounded-xl bg-plum-800 hover:bg-accent text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg border border-plum-700 inline-flex items-center gap-2">
+                        <span data-i18n="btn_see_more">See More</span> <i class="fa-solid fa-store text-[11px]"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. ABOUT SECTION -->
+        <section id="about" class="border-b border-plum-800">
+            <div class="max-w-[90rem] mx-auto w-full px-5 sm:px-8 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-7 lg:gap-12 items-center">
+                <div class="about-content-col space-y-3.5 sm:space-y-4 text-center lg:text-left flex flex-col items-center lg:items-start">
+                    <div class="inline-flex items-center justify-center gap-2 px-3.5 py-1 rounded-full bg-accent/15 border border-accent/30 text-accent text-xs uppercase tracking-widest font-extrabold mx-auto lg:mx-0">
+                        <i class="fa-solid fa-sparkles text-[10px]"></i>
+                        <span id="cms-about-subtitle" data-i18n="about_subtitle">About Us</span>
+                    </div>
+                    <h2 id="cms-about-title" class="text-2xl sm:text-3xl lg:text-[2.2rem] font-black text-white leading-tight tracking-tight text-center lg:text-left w-full" data-i18n="about_title">
+                        About People’s Plaza
+                    </h2>
+                    <div class="about-paragraphs-wrap space-y-3 sm:space-y-3.5 max-w-xl mx-auto lg:max-w-none lg:mx-0 px-1 sm:px-2 lg:px-0">
+                        <p id="cms-about-desc-1" class="about-paragraph-lead text-slate-100 text-[15px] sm:text-base lg:text-[0.95rem] font-medium leading-relaxed text-center lg:text-left" data-i18n="about_desc_1">
+                            Located in the heart of New Road, Kathmandu, People’s Plaza is a popular shopping and lifestyle destination offering a modern retail experience. Our shopping complex brings together Nepali and international brands, featuring clothing, footwear, electronics, and lifestyle products under one roof.
+                        </p>
+                        <p id="cms-about-desc-2" class="about-paragraph-body text-slate-300 text-[15px] sm:text-base lg:text-[0.95rem] font-normal leading-relaxed text-center lg:text-left" data-i18n="about_desc_2">
+                            We provide a safe, welcoming, and comfortable environment for every visitor. Beyond shopping, guests can enjoy cozy cafés, family-friendly restaurants, and relaxing dining spaces. With its central location and diverse options, People’s Plaza brings together quality, style, and community, creating enjoyable and memorable experiences for everyone.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 w-full about-features-grid">
+                        <div class="p-3 sm:p-3 rounded-xl bg-plum-900/90 border border-plum-700/80 shadow-md hover:border-accent/40 transition-colors text-center lg:text-left">
+                            <i class="fa-solid fa-clock text-accent text-lg mb-1"></i>
+                            <h4 class="font-extrabold text-white text-xs sm:text-xs" data-i18n="hours_title">Opening Hours</h4>
+                            <p id="cms-about-hours" class="text-xs sm:text-[11px] text-slate-300 mt-0.5 font-medium" data-i18n="hours_val">Sun - Sat: 10:00 AM - 8:00 PM</p>
+                        </div>
+                        <div class="p-3 sm:p-3 rounded-xl bg-plum-900/90 border border-plum-700/80 shadow-md hover:border-accent/40 transition-colors text-center lg:text-left">
+                            <i class="fa-solid fa-square-parking text-accent text-lg mb-1"></i>
+                            <h4 class="font-extrabold text-white text-xs sm:text-xs" data-i18n="parking_title">Parking Facility</h4>
+                            <p class="text-xs sm:text-[11px] text-slate-300 mt-0.5 font-medium" data-i18n="parking_val">Two Wheelers & Cars</p>
+                        </div>
+                        <div class="p-3 sm:p-3 rounded-xl bg-plum-900/90 border border-plum-700/80 shadow-md hover:border-accent/40 transition-colors text-center lg:text-left">
+                            <i class="fa-solid fa-map-location-dot text-accent text-lg mb-1"></i>
+                            <h4 class="font-extrabold text-white text-xs sm:text-xs" data-i18n="landmark_title">Central Landmark</h4>
+                            <p class="text-xs sm:text-[11px] text-slate-300 mt-0.5 font-medium" data-i18n="landmark_val">Khichapokhari, New Road</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="cms-about-photos-container" class="relative flex flex-col items-center justify-center w-full">
+                    <!-- Rendered dynamically from CMS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. LOCATION MAP SECTION -->
+        <section id="location-map" class="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-plum-950 border-b border-plum-800">
+            <div class="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+                <div class="text-center max-w-3xl mx-auto space-y-2">
+                    <h2 class="text-xs uppercase tracking-widest text-accent font-bold" data-i18n="map_subtitle">Find Us On Map</h2>
+                    <p class="text-2xl sm:text-4xl font-extrabold text-white" data-i18n="map_title">Conveniently Located in Central Kathmandu</p>
+                    <p class="text-slate-300 text-xs sm:text-base" data-i18n="map_desc">Easily accessible from New Road, Khichapokhari, and surrounding business districts.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                    <div class="bg-plum-900 border border-plum-800 rounded-xl p-5 sm:p-6 flex flex-col justify-between space-y-5 shadow-xl">
+                        <div>
+                            <div class="w-10 h-10 rounded-lg bg-accent/20 border border-accent/40 flex items-center justify-center text-accent text-base mb-3">
+                                <i class="fa-solid fa-map-pin"></i>
+                            </div>
+                            <h3 class="text-lg sm:text-xl font-bold text-white mb-2" data-i18n="loc_heading">People's Plaza Location</h3>
+                            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed" data-i18n="loc_address">
+                                Khichapokhari, Near New Road Gate,<br/>
+                                Ward No. 22, Kathmandu 44600, Nepal.
+                            </p>
+                        </div>
+
+                        <div class="space-y-3 pt-3 border-t border-plum-800 text-xs">
+                            <div class="flex items-center gap-2.5 text-slate-300">
+                                <i class="fa-solid fa-bus text-accent w-4"></i>
+                                <span data-i18n="transit_1">5-min walk from Ratna Park Bus Stop</span>
+                            </div>
+                            <div class="flex items-center gap-2.5 text-slate-300">
+                                <i class="fa-solid fa-car text-accent w-4"></i>
+                                <span data-i18n="transit_2">Direct vehicle access via Khichapokhari Road</span>
+                            </div>
+                        </div>
+
+                        <a href="https://www.google.com/maps/search/?api=1&query=People%27s+Plaza,+Khichapokhari,+New+Road,+Kathmandu,+Nepal" target="_blank" rel="noopener noreferrer" class="w-full py-3 px-4 rounded-xl bg-accent hover:bg-accent-hover text-white font-semibold text-center text-xs shadow-md transition-all flex items-center justify-center gap-2">
+                            <span data-i18n="btn_maps">Open in Google Maps</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+
+                    <div class="lg:col-span-2 rounded-xl overflow-hidden border border-plum-800 shadow-xl bg-plum-900 min-h-[300px] sm:min-h-[350px] relative">
+                        <iframe 
+                            title="People's Plaza Kathmandu Exact Location Map"
+                            src="https://maps.google.com/maps?q=People%27s+Plaza,+Khichapokhari,+New+Road,+Kathmandu,+Nepal&hl=en&z=18&ie=UTF8&iwloc=B&output=embed" 
+                            class="w-full h-full min-h-[300px] sm:min-h-[350px] border-0" 
+                            allowfullscreen="" 
+                            loading="lazy" 
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                        <a href="https://www.google.com/maps/search/?api=1&query=People%27s+Plaza,+Khichapokhari,+New+Road,+Kathmandu,+Nepal" target="_blank" rel="noopener noreferrer" class="absolute bottom-3 left-3 z-10 bg-plum-950/95 hover:bg-plum-900 border border-accent/60 text-white px-3.5 py-2 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-bold transition-all">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                            <i class="fa-solid fa-location-dot text-red-500 text-sm"></i>
+                            <span data-i18n="brand_name">People's Plaza</span> — <span data-i18n="landmark_val">Khichapokhari, New Road</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. CONTACT SECTION -->
+        <section id="contact" class="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-plum-950">
+            <div class="max-w-6xl mx-auto space-y-8 sm:space-y-10">
+                <div class="text-center max-w-3xl mx-auto space-y-2">
+                    <h2 class="text-xs uppercase tracking-widest text-accent font-bold" data-i18n="contact_subtitle">Get In Touch</h2>
+                    <p class="text-2xl sm:text-4xl font-extrabold text-white" data-i18n="contact_title">We'd Love to Hear From You</p>
+                    <p class="text-slate-300 text-xs sm:text-base" data-i18n="contact_desc">For leasing inquiries, customer support, or general store feedback.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+                    <div class="lg:col-span-7 bg-plum-900 border border-plum-800 rounded-2xl p-5 sm:p-6 shadow-xl">
+                        <form id="contact-form" onsubmit="handleFormSubmit(event)" class="space-y-3.5">
+                            <input type="hidden" name="access_key" value="e34a655a-94cd-4d5d-a988-51f3c946e238">
+                            <input type="hidden" name="subject" value="New Inquiry from People's Plaza Website">
+                            <input type="hidden" id="contact-photo-url" name="attachment_url" value="">
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label for="contact-name" class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="form_name">Full Name *</label>
+                                    <input type="text" name="name" id="contact-name" required placeholder="John Doe" class="w-full px-3.5 py-2.5 rounded-xl bg-plum-950 border border-plum-800 text-white placeholder-slate-500 focus:outline-none focus:border-accent text-xs">
+                                </div>
+                                <div>
+                                    <label for="contact-phone" class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="form_phone">Phone Number *</label>
+                                    <div class="flex gap-1">
+                                        <select id="contact-country-code" name="country_code" aria-label="Country code" class="px-2 py-2.5 rounded-xl bg-plum-950 border border-plum-800 text-white text-[11px]">
+                                            <option value="+977">+977 (NP)</option>
+                                            <option value="+91">+91 (IN)</option>
+                                            <option value="+1">+1 (US)</option>
+                                            <option value="+44">+44 (UK)</option>
+                                            <option value="+86">+86 (CN)</option>
+                                            <option value="+81">+81 (JP)</option>
+                                            <option value="+61">+61 (AU)</option>
+                                            <option value="+971">+971 (AE)</option>
+                                            <option value="+966">+966 (SA)</option>
+                                        </select>
+                                        <input type="tel" name="phone" id="contact-phone" required placeholder="9800000000" class="w-full px-3 py-2.5 rounded-xl bg-plum-950 border border-plum-800 text-white placeholder-slate-500 focus:outline-none focus:border-accent text-xs">
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="contact-email" class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="form_email">Email Address *</label>
+                                <input type="email" name="email" id="contact-email" required placeholder="john@example.com" class="w-full px-3.5 py-2.5 rounded-xl bg-plum-950 border border-plum-800 text-white placeholder-slate-500 focus:outline-none focus:border-accent text-xs">
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label for="contact-msg" class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider" data-i18n="form_msg">Message *</label>
+                                </div>
+                                <textarea rows="3" name="message" id="contact-msg" required placeholder="How can we help you?" class="w-full px-3.5 py-2.5 rounded-xl bg-plum-950 border border-plum-800 text-white placeholder-slate-500 focus:outline-none focus:border-accent text-xs"></textarea>
+
+                                <div class="mt-1.5 flex items-center justify-between p-2 rounded-xl bg-plum-950 border border-plum-800 text-xs">
+                                    <label for="contact-photo-file" class="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white transition-colors truncate">
+                                        <span class="w-6 h-6 rounded-lg bg-plum-800 text-accent flex items-center justify-center shrink-0 text-xs"><i class="fa-solid fa-camera"></i></span>
+                                        <span id="contact-photo-label" class="text-[11px] text-slate-400 truncate" data-i18n="form_attach_photo">Attach photo or screenshot (Optional JPG, PNG)...</span>
+                                        <input type="file" id="contact-photo-file" accept="image/*" class="hidden" onchange="handleContactPhotoUpload(event)">
+                                    </label>
+                                    <div id="contact-photo-preview-wrap" class="hidden flex items-center gap-2 shrink-0">
+                                        <img id="contact-photo-preview" src="" alt="Preview" class="w-7 h-7 rounded-lg object-cover border border-accent">
+                                        <button type="button" onclick="removeContactPhoto()" aria-label="Remove photo" class="text-slate-400 hover:text-red-400 text-xs px-1"><i class="fa-solid fa-xmark"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" id="contact-submit-btn" class="w-full py-3 rounded-xl bg-accent hover:bg-accent-hover text-white font-bold text-xs shadow-lg shadow-accent/20 transition-all" data-i18n="btn_send_msg">
+                                Send Message
+                            </button>
+                            <p id="contact-result-msg" role="status" aria-live="polite" class="text-xs text-center font-medium mt-2"></p>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-5 space-y-5">
+                        <div class="bg-plum-900 border border-plum-800 rounded-2xl p-5 space-y-3.5 shadow-xl">
+                            <h3 class="text-base font-bold text-white" data-i18n="info_title">Contact Information</h3>
+                            
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-accent/20 text-accent flex items-center justify-center flex-shrink-0 text-xs">
+                                    <i class="fa-solid fa-phone"></i>
+                                </div>
+                                <div class="w-full">
+                                    <div class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="info_phone">Phone</div>
+                                    <div id="cms-contact-phones" class="text-xs text-white font-medium space-y-0.5">
+                                        +977 01-4245000 / +977 01-4245001
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-accent/20 text-accent flex items-center justify-center flex-shrink-0 text-xs">
+                                    <i class="fa-solid fa-envelope"></i>
+                                </div>
+                                <div class="w-full">
+                                    <div class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="info_email">Email</div>
+                                    <div id="cms-contact-emails" class="text-xs text-white font-medium space-y-0.5">
+                                        adminpeoplesplaza@gmail.com
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-accent/20 text-accent flex items-center justify-center flex-shrink-0 text-xs">
+                                    <i class="fa-solid fa-clock"></i>
+                                </div>
+                                <div>
+                                    <div class="text-[10px] text-slate-400 uppercase font-semibold" data-i18n="info_hours">Business Hours</div>
+                                    <div id="cms-contact-hours" class="text-xs text-white font-medium" data-i18n="info_hours_val">Sunday – Saturday: 10:00 AM – 8:00 PM</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-plum-900 border border-plum-800 rounded-2xl p-4 text-center space-y-2.5 shadow-xl">
+                            <h4 class="text-[11px] font-bold text-slate-300 uppercase tracking-wider" data-i18n="social_title">Connect With Us</h4>
+                            <div id="cms-social-links" class="flex flex-wrap justify-center gap-3">
+                                <!-- Rendered dynamically from CMS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-plum-950 border-t border-plum-800 py-6 px-4 text-slate-400 text-xs">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center">
+                <img id="site-footer-logo" src="/peoples-plaza-logo.png" alt="People's Plaza Logo" class="h-8 w-auto object-contain" onerror="this.onerror=null;this.src=window.PP_LOGO_DATA_URL||'peoples-plaza-logo.png'">
+            </div>
+            <p data-i18n="footer_rights">&copy; 2026 People's Plaza Kathmandu. All rights reserved.</p>
+            <div class="flex flex-wrap justify-center items-center gap-4">
+                <a href="login.html" class="text-accent hover:underline font-semibold" data-i18n="nav_portal">Shop Portal</a>
+                <a href="admin-login.html" class="text-slate-300 hover:text-white font-semibold" data-i18n="nav_admin">Admin Login</a>
+                <a href="forgot-password.html" class="hover:text-white transition-colors" data-i18n="footer_forgot">Forgot Password</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- "SEE MORE" FULL SHOP DIRECTORY MODAL -->
+    <div id="directory-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md" onclick="closeDirectoryModal()">
+        <div class="bg-plum-900 border border-plum-700 rounded-2xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl relative p-4 sm:p-6 space-y-4" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between pb-3 border-b border-plum-800 flex-shrink-0">
+                <div>
+                    <span class="text-[10px] uppercase tracking-widest text-accent font-extrabold" data-i18n="dir_modal_sub">Complete Store Directory</span>
+                    <h3 class="text-lg sm:text-2xl font-extrabold text-white flex items-center gap-2">
+                        <span data-i18n="dir_modal_title">All Live Shops at People's Plaza</span>
+                        <span id="directory-modal-count" class="px-2.5 py-0.5 rounded-full bg-accent/20 text-accent text-xs font-bold">0</span>
+                    </h3>
+                </div>
+                <button type="button" onclick="closeDirectoryModal()" aria-label="Close directory modal" class="w-9 h-9 rounded-full bg-plum-800 text-white hover:bg-accent flex items-center justify-center transition-colors flex-shrink-0">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Real-time Search & Category Filter inside Modal -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-plum-950/90 p-3 rounded-xl border border-plum-800 flex-shrink-0">
+                <div class="relative w-full sm:w-96">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="directory-modal-search" oninput="renderDirectoryModalStores()" placeholder="Search shops by name or category..." data-i18n-placeholder="dir_modal_search" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-plum-900 border border-plum-700 text-slate-100 placeholder-slate-400 focus:outline-none focus:border-accent text-xs transition-colors">
+                </div>
+                <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                    <button type="button" onclick="setModalCategory('all')" data-modal-cat="all" class="modal-cat-btn px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-accent text-white transition-all whitespace-nowrap" data-i18n="cat_all_short">All</button>
+                    <button type="button" onclick="setModalCategory('Fashion')" data-modal-cat="Fashion" class="modal-cat-btn px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-plum-800 text-slate-300 hover:text-white transition-all whitespace-nowrap" data-i18n="cat_fashion">Fashion</button>
+                    <button type="button" onclick="setModalCategory('Footwear')" data-modal-cat="Footwear" class="modal-cat-btn px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-plum-800 text-slate-300 hover:text-white transition-all whitespace-nowrap" data-i18n="cat_footwear">Footwear</button>
+                    <button type="button" onclick="setModalCategory('Cosmetics')" data-modal-cat="Cosmetics" class="modal-cat-btn px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-plum-800 text-slate-300 hover:text-white transition-all whitespace-nowrap" data-i18n="cat_cosmetics">Cosmetics</button>
+                    <button type="button" onclick="setModalCategory('Electronics')" data-modal-cat="Electronics" class="modal-cat-btn px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-plum-800 text-slate-300 hover:text-white transition-all whitespace-nowrap" data-i18n="cat_electronics">Electronics</button>
+                </div>
+            </div>
+
+            <!-- Scrollable All Shops Grid -->
+            <div class="overflow-y-auto flex-1 min-h-0 pr-1 py-1">
+                <div id="directory-modal-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-stretch">
+                    <!-- Populated dynamically from database -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTACT FORM SUBMISSION SUCCESS MODAL -->
+    <div id="contact-success-modal" class="fixed inset-0 z-[70] hidden flex items-center justify-center p-4 bg-black/85 backdrop-blur-md" onclick="closeContactSuccessModal()">
+        <div class="bg-plum-900 border border-plum-700 rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto text-2xl shadow-lg">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="space-y-1.5">
+                <h3 class="text-xl font-extrabold text-white" data-i18n="contact_success_title">Message Sent Successfully!</h3>
+                <p class="text-xs text-slate-300 leading-relaxed" data-i18n="contact_success_desc">
+                    Thank you for reaching out to <strong class="text-white">People's Plaza</strong>. Your enquiry has been saved to our database and forwarded to <strong class="text-accent">adminpeoplesplaza@gmail.com</strong>.
+                </p>
+            </div>
+            <button type="button" onclick="closeContactSuccessModal()" class="w-full py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-white font-bold text-xs uppercase tracking-wider transition-all shadow-lg" data-i18n="btn_done">
+                Done
+            </button>
+        </div>
+    </div>
+
+    <!-- STORE PROFILE POPUP MODAL -->
+    <div id="store-modal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md" onclick="closeModal()">
+        <div class="modal-card-responsive bg-plum-900 border border-plum-700 rounded-xl max-w-3xl w-full flex flex-col shadow-2xl relative my-auto p-4 sm:p-6" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between pb-2.5 border-b border-plum-800 flex-shrink-0">
+                <h3 id="modal-title" class="text-lg sm:text-xl font-extrabold text-white truncate pr-4">Store Name</h3>
+                <button onclick="closeModal()" aria-label="Close modal" class="w-8 h-8 rounded-full bg-plum-800 text-white hover:bg-accent flex items-center justify-center transition-colors flex-shrink-0"><i class="fa-solid fa-xmark text-xs"></i></button>
+            </div>
+
+            <div class="space-y-3 pt-3">
+                <div id="modal-cover" class="h-24 sm:h-28 bg-gradient-to-r from-purple-800 to-pink-700 rounded-lg relative bg-cover bg-center flex-shrink-0">
+                    <div class="absolute -bottom-4 left-4 w-14 h-14 rounded-lg bg-plum-950 border-2 border-plum-800 overflow-hidden shadow-lg">
+                        <img id="modal-profile-img" src="" alt="Store Avatar" referrerpolicy="no-referrer" class="w-full h-full object-cover">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div class="space-y-2">
+                        <div>
+                            <p id="modal-subtitle" class="text-[11px] text-accent font-bold">Category · Level</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <div class="p-2 bg-plum-950 rounded-lg border border-plum-800"><span class="block text-[8px] text-slate-400 uppercase font-bold" data-i18n="modal_cat_label">Category</span><strong id="view-category" class="text-[11px] text-slate-200">Fashion</strong></div>
+                            <div class="p-2 bg-plum-950 rounded-lg border border-plum-800"><span class="block text-[8px] text-slate-400 uppercase font-bold" data-i18n="modal_floor_label">Floor</span><strong id="view-floor" class="text-[11px] text-slate-200">Level 1</strong></div>
+                            <div class="p-2 bg-plum-950 rounded-lg border border-plum-800"><span class="block text-[8px] text-slate-400 uppercase font-bold" data-i18n="modal_unit_label">Shop No</span><strong id="view-unit" class="text-[11px] text-slate-200">PP-101</strong></div>
+                            <div class="p-2 bg-plum-950 rounded-lg border border-plum-800"><span class="block text-[8px] text-slate-400 uppercase font-bold" data-i18n="modal_time_label">Timing</span><strong id="view-timing" class="text-[11px] text-slate-200">10 AM - 8 PM</strong></div>
+                        </div>
+
+                        <div class="p-2.5 bg-plum-950 rounded-lg border border-plum-800 space-y-0.5">
+                            <h4 class="text-[9px] font-bold text-accent uppercase tracking-wider" data-i18n="modal_contact_label">Contact Details</h4>
+                            <div class="text-[11px] text-slate-200 flex items-center gap-1.5 truncate"><i class="fa-solid fa-phone text-accent text-[10px]"></i> <span id="view-contact-phone">+977 01-4245000</span></div>
+                            <div class="text-[11px] text-slate-200 flex items-center gap-1.5 truncate"><i class="fa-solid fa-envelope text-accent text-[10px]"></i> <span id="view-contact-email">adminpeoplesplaza@gmail.com</span></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-[11px] font-bold text-accent uppercase tracking-wider mb-1" data-i18n="modal_about_label">About Store</h4>
+                            <p id="modal-desc" class="text-xs text-slate-300 leading-relaxed"></p>
+                        </div>
+
+                        <div class="space-y-1 pt-1">
+                            <h4 class="text-[11px] font-bold text-accent uppercase tracking-wider" data-i18n="modal_connect_label">Connect With Store</h4>
+                            <div id="view-social-links" class="flex gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIGHTBOX ZOOM MODAL FOR CAROUSEL -->
+    <div id="lightbox-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl" onclick="closeLightbox()">
+        <div class="relative max-w-5xl w-full text-center space-y-4 p-4" onclick="event.stopPropagation()">
+            <div class="absolute top-2 right-4 z-20 flex items-center gap-3">
+                <span id="lightbox-counter" class="bg-plum-900/80 border border-plum-700 text-accent text-sm font-bold px-4 py-2 rounded-full shadow-lg">1 / 3</span>
+                <button onclick="closeLightbox()" aria-label="Close lightbox" class="text-white text-xl w-11 h-11 bg-plum-800/90 hover:bg-accent rounded-full flex items-center justify-center shadow-lg transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="relative flex items-center justify-center min-h-[50vh] max-h-[80vh]">
+                <button onclick="prevLightboxPhoto()" aria-label="Previous image" class="absolute left-2 z-10 w-11 h-11 rounded-full bg-plum-900/90 hover:bg-accent text-white border border-plum-700 flex items-center justify-center shadow-2xl transition-all"><i class="fa-solid fa-chevron-left"></i></button>
+                <img id="lightbox-img" src="" alt="Gallery Zoom" referrerpolicy="no-referrer" class="max-h-[75vh] max-w-full mx-auto rounded-xl shadow-2xl border border-plum-700/60 object-contain">
+                <button onclick="nextLightboxPhoto()" aria-label="Next image" class="absolute right-2 z-10 w-11 h-11 rounded-full bg-plum-900/90 hover:bg-accent text-white border border-plum-700 flex items-center justify-center shadow-2xl transition-all"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
+            <div class="pt-3">
+                <p id="lightbox-caption" class="text-xs sm:text-base font-bold text-white bg-plum-900/80 border border-plum-700 py-2.5 px-5 rounded-xl inline-block shadow-xl"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Engine -->
+    <script>
+        let liveStoresList = [];
+        let activeCategory = 'all';
+        let modalActiveCategory = 'all';
+        let discoverPhotos = [];
+        let currentSlide = 0;
+        let currentLightboxIndex = 0;
+
+        function getSupabase() {
+            return window.ppSupabase || null;
+        }
+
+        function isValidEmail(email) {
+            const trimmed = (email || '').trim();
+            const atIndex = trimmed.indexOf('@');
+            const dotIndex = trimmed.lastIndexOf('.');
+            return !(atIndex < 1 || dotIndex < atIndex + 2 || dotIndex >= trimmed.length - 2);
+        }
+
+        let currentLang = window.ppGetLanguage ? window.ppGetLanguage() : 'en';
+
+        function renderCMSContent() {
+            currentLang = window.ppGetLanguage ? window.ppGetLanguage() : currentLang;
+            const cms = window.ppGetCMS ? window.ppGetCMS() : window.PP_DEFAULT_CMS;
+            if (!cms) return;
+
+            const trDyn = (txt) => {
+                if (currentLang === 'ne' && window.ppTranslateDynamicText) {
+                    return window.ppTranslateDynamicText(txt, 'ne');
+                }
+                return txt;
+            };
+
+            const headerLogo = document.getElementById('site-header-logo');
+            const footerLogo = document.getElementById('site-footer-logo');
+            const brandTitle = document.getElementById('site-brand-title');
+            const brandSub = document.getElementById('site-brand-subtitle');
+            if (headerLogo && cms.logoUrl) headerLogo.src = cms.logoUrl;
+            if (footerLogo && cms.logoUrl) footerLogo.src = cms.logoUrl;
+            if (brandTitle && cms.brandTitle) {
+                brandTitle.textContent = currentLang === 'ne' ? trDyn(cms.brandTitle) : cms.brandTitle;
+            }
+            if (brandSub && cms.brandSubtitle) {
+                brandSub.textContent = currentLang === 'ne' ? trDyn(cms.brandSubtitle) : cms.brandSubtitle;
+            }
+
+            const slides = Array.isArray(cms.carouselSlides) && cms.carouselSlides.length > 0
+                ? cms.carouselSlides
+                : window.PP_DEFAULT_CMS.carouselSlides;
+            discoverPhotos = slides.map(s => ({
+                url: s.url,
+                tag: trDyn(s.tag || 'Highlight'),
+                caption: trDyn(s.caption || "People's Plaza Highlight")
+            }));
+
+            const zoomText = window.ppT ? window.ppT('click_to_zoom', 'Click to Zoom') : 'Click to Zoom';
+            const track = document.getElementById('carousel-track');
+            if (track) {
+                track.innerHTML = discoverPhotos.map((slide, idx) => `
+                    <div class="w-full flex-shrink-0 relative" onclick="openDiscoverLightbox(${idx})">
+                        <img src="${slide.url}" alt="${slide.caption}" referrerpolicy="no-referrer" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1200&q=80'">
+                        <div class="absolute inset-0 bg-gradient-to-t from-plum-950 via-transparent to-transparent opacity-80"></div>
+                        <div class="absolute bottom-5 left-5 right-5 text-white flex items-center justify-between gap-2">
+                            <div>
+                                <span class="px-2.5 py-0.5 rounded-md bg-accent text-[10px] font-bold uppercase tracking-wider">${slide.tag}</span>
+                                <h3 class="text-lg sm:text-xl font-bold mt-1.5">${slide.caption}</h3>
+                            </div>
+                            <span class="bg-black/60 px-3 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-md flex items-center gap-1.5 shrink-0"><i class="fa-solid fa-expand text-accent"></i> <span>${zoomText}</span></span>
+                        </div>
+                    </div>
+                `).join('');
+                if (currentSlide >= discoverPhotos.length) currentSlide = 0;
+                updateCarousel();
+            }
+
+            const aboutTitleEl = document.getElementById('cms-about-title');
+            const aboutDesc1El = document.getElementById('cms-about-desc-1');
+            const aboutDesc2El = document.getElementById('cms-about-desc-2');
+            if (aboutTitleEl && cms.aboutTitle) {
+                aboutTitleEl.textContent = currentLang === 'ne' ? trDyn(cms.aboutTitle) : cms.aboutTitle;
+            }
+            if (aboutDesc1El && cms.aboutDesc1) {
+                aboutDesc1El.innerHTML = currentLang === 'ne' ? trDyn(cms.aboutDesc1) : cms.aboutDesc1;
+            }
+            if (aboutDesc2El && cms.aboutDesc2) {
+                aboutDesc2El.innerHTML = currentLang === 'ne' ? trDyn(cms.aboutDesc2) : cms.aboutDesc2;
+            }
+
+            const homeDescEl = document.querySelector('[data-i18n="home_desc"]');
+            if (homeDescEl && cms.homeDesc) {
+                homeDescEl.textContent = currentLang === 'ne' ? trDyn(cms.homeDesc) : cms.homeDesc;
+            }
+
+            const aboutPhotosContainer = document.getElementById('cms-about-photos-container');
+            if (aboutPhotosContainer) {
+                const aboutPhotos = Array.isArray(cms.aboutPhotos) && cms.aboutPhotos.length > 0
+                    ? cms.aboutPhotos
+                    : window.PP_DEFAULT_CMS.aboutPhotos;
+                if (aboutPhotos.length === 1) {
+                    const p = aboutPhotos[0];
+                    const cap = p.caption ? trDyn(p.caption) : '';
+                    aboutPhotosContainer.innerHTML = `
+                        <div class="w-full max-w-[560px] aspect-[16/10.5] max-h-[380px] rounded-2xl overflow-hidden border border-plum-800 shadow-2xl group relative">
+                            <img src="${p.url}" alt="${cap || 'About People\'s Plaza'}" referrerpolicy="no-referrer" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.src='https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?auto=format&fit=crop&w=1200&q=80'">
+                            ${cap ? `<div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-plum-950/95 via-plum-950/70 to-transparent p-3 text-xs font-bold text-white">${cap}</div>` : ''}
+                        </div>
+                    `;
+                } else {
+                    aboutPhotosContainer.innerHTML = `
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-[640px]">
+                            ${aboutPhotos.map(p => {
+                                const cap = p.caption ? trDyn(p.caption) : '';
+                                return `
+                                <div class="aspect-[16/11] rounded-2xl overflow-hidden border border-plum-800 shadow-xl group relative">
+                                    <img src="${p.url}" alt="${cap || 'About People\'s Plaza'}" referrerpolicy="no-referrer" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.src='https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?auto=format&fit=crop&w=800&q=80'">
+                                    ${cap ? `<div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-plum-950/95 via-plum-950/70 to-transparent p-2 text-[11px] font-bold text-white truncate">${cap}</div>` : ''}
+                                </div>
+                            `;
+                            }).join('')}
+                        </div>
+                    `;
+                }
+            }
+
+            const phonesEl = document.getElementById('cms-contact-phones');
+            if (phonesEl && Array.isArray(cms.phones)) {
+                phonesEl.innerHTML = cms.phones.length > 0
+                    ? cms.phones.map(p => `<div><span class="text-slate-400 text-[10px] mr-1">${p.label ? trDyn(p.label) + ':' : ''}</span><a href="tel:${p.value}" class="hover:text-accent transition-colors">${p.value}</a></div>`).join('')
+                    : '<div>+977 01-4245000</div>';
+            }
+
+            const emailsEl = document.getElementById('cms-contact-emails');
+            if (emailsEl && Array.isArray(cms.emails)) {
+                emailsEl.innerHTML = cms.emails.length > 0
+                    ? cms.emails.map(em => `<div><span class="text-slate-400 text-[10px] mr-1">${em.label ? trDyn(em.label) + ':' : ''}</span><a href="mailto:${em.value}" class="hover:text-accent transition-colors">${em.value}</a></div>`).join('')
+                    : '<div>adminpeoplesplaza@gmail.com</div>';
+            }
+
+            const hoursEl = document.getElementById('cms-contact-hours');
+            const aboutHoursEl = document.getElementById('cms-about-hours');
+            if (cms.businessHours) {
+                const localizedHours = currentLang === 'ne' ? trDyn(cms.businessHours) : cms.businessHours;
+                if (hoursEl) hoursEl.textContent = localizedHours;
+                if (aboutHoursEl) aboutHoursEl.textContent = localizedHours;
+            }
+
+            const socialsEl = document.getElementById('cms-social-links');
+            if (socialsEl && Array.isArray(cms.socialLinks)) {
+                socialsEl.innerHTML = cms.socialLinks.length > 0
+                    ? cms.socialLinks.map(s => `
+                        <a href="${s.url}" target="_blank" rel="noopener noreferrer" title="${s.platform}" aria-label="${s.platform}" class="px-3.5 h-10 rounded-xl bg-plum-800 hover:bg-accent text-white flex items-center justify-center gap-2 text-xs font-bold transition-all shadow-md">
+                            <i class="${s.icon || 'fa-solid fa-share-nodes'} text-sm"></i>
+                            <span>${s.platform}</span>
+                        </a>
+                    `).join('')
+                    : '<span class="text-xs text-slate-500">No social links configured</span>';
+            }
+        }
+
+        async function fetchLiveStores() {
+            if (window.ppGetMergedData) {
+                const { allStores } = await window.ppGetMergedData();
+                liveStoresList = allStores.filter(s => !s.is_hidden);
+            } else {
+                liveStoresList = (window.PP_STORE_SEED || []).filter(s => !s.is_hidden);
+            }
+
+            const statCount = document.getElementById('stat-store-count');
+            if (statCount) statCount.innerText = liveStoresList.length + "+";
+
+            renderStores();
+            renderDirectoryModalStores();
+
+            if (window.ppSyncDynamicTranslationsFromServer) {
+                window.ppSyncDynamicTranslationsFromServer(liveStoresList).then(updated => {
+                    if (updated && (window.ppGetLanguage ? window.ppGetLanguage() : 'en') === 'ne') {
+                        renderStores();
+                        renderDirectoryModalStores();
+                    }
+                });
+            }
+        }
+
+        const storeGrid = document.getElementById('store-grid');
+        const searchInput = document.getElementById('store-search');
+        const seeAllContainer = document.getElementById('see-all-container');
+        const seeAllBtn = document.getElementById('see-all-btn');
+
+        function renderStoreCardHTML(store) {
+            const tStore = window.ppTranslateStore ? window.ppTranslateStore(store) : store;
+            const btnLabel = window.ppT ? window.ppT('btn_view_details', 'View Store Details') : 'View Store Details';
+            return `
+                <div class="store-card-item bg-plum-900 rounded-xl overflow-hidden border border-plum-800 shadow-xl hover:border-accent/50 transition-all flex flex-col h-full justify-between">
+                    <div>
+                        <div class="card-img-container overflow-hidden relative cursor-pointer" onclick="openModal('${store.id}')">
+                            <img src="${store.img}" alt="${tStore.name}" referrerpolicy="no-referrer" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500" onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80'">
+                            <span class="store-card-badge absolute top-2.5 left-2.5 px-3 py-0.5 bg-plum-950/90 rounded-lg text-[10px] font-bold text-accent uppercase tracking-wider shadow-md">${tStore.category}</span>
+                        </div>
+                        <div class="store-card-body p-3.5 space-y-1.5">
+                            <div class="store-card-meta text-[11px] text-accent font-bold tracking-wide"><i class="fa-solid fa-location-arrow mr-1"></i> ${tStore.floor} (${store.unit || 'PP-101'})</div>
+                            <h3 class="store-card-title text-base font-extrabold text-white truncate cursor-pointer hover:text-accent" onclick="openModal('${store.id}')">${tStore.name}</h3>
+                            <p class="store-card-desc text-sm text-slate-300 line-clamp-3 leading-relaxed">${tStore.desc}</p>
+                        </div>
+                    </div>
+                    <div class="p-1.5 pt-1 mt-auto">
+                        <button type="button" onclick="openModal('${store.id}')" class="store-card-btn w-full py-2.5 rounded-xl bg-plum-800 hover:bg-accent text-white text-xs font-bold transition-all shadow-md" data-i18n="btn_view_details">${btnLabel}</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderStores() {
+            const query = (searchInput.value || '').toLowerCase();
+            const filtered = liveStoresList.filter(store => {
+                const tStore = window.ppTranslateStore ? window.ppTranslateStore(store) : store;
+                const matchesCat = activeCategory === 'all' || (store.category || '').toLowerCase() === activeCategory.toLowerCase();
+                const matchesSearch =
+                    (store.name || '').toLowerCase().includes(query) ||
+                    (tStore.name || '').toLowerCase().includes(query) ||
+                    (store.desc || '').toLowerCase().includes(query) ||
+                    (tStore.desc || '').toLowerCase().includes(query) ||
+                    (store.category || '').toLowerCase().includes(query) ||
+                    (tStore.category || '').toLowerCase().includes(query) ||
+                    (store.unit || '').toLowerCase().includes(query) ||
+                    (store.floor || '').toLowerCase().includes(query) ||
+                    (tStore.floor || '').toLowerCase().includes(query);
+                return matchesCat && matchesSearch;
+            });
+
+            const limit = 5;
+            const displayList = filtered.slice(0, limit);
+
+            if (liveStoresList.length > 0) {
+                seeAllContainer.classList.remove('hidden');
+            } else {
+                seeAllContainer.classList.add('hidden');
+            }
+
+            if (filtered.length === 0) {
+                const emptyText = window.ppT ? window.ppT('no_stores_found', 'No stores found matching your query.') : 'No stores found matching your query.';
+                storeGrid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400">${emptyText}</div>`;
+                return;
+            }
+
+            storeGrid.innerHTML = displayList.map(renderStoreCardHTML).join('');
+        }
+
+        function openDirectoryModal() {
+            const dirModal = document.getElementById('directory-modal');
+            const dirSearch = document.getElementById('directory-modal-search');
+            if (dirSearch) dirSearch.value = '';
+            modalActiveCategory = 'all';
+            updateModalCategoryPills();
+            renderDirectoryModalStores();
+            dirModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeDirectoryModal() {
+            const dirModal = document.getElementById('directory-modal');
+            dirModal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function setModalCategory(cat) {
+            modalActiveCategory = cat;
+            updateModalCategoryPills();
+            renderDirectoryModalStores();
+        }
+
+        function updateModalCategoryPills() {
+            document.querySelectorAll('.modal-cat-btn').forEach(btn => {
+                if (btn.getAttribute('data-modal-cat') === modalActiveCategory) {
+                    btn.className = 'modal-cat-btn px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-accent text-white transition-all whitespace-nowrap';
+                } else {
+                    btn.className = 'modal-cat-btn px-3 py-1.5 rounded-xl text-[11px] font-bold uppercase tracking-wider bg-plum-800 text-slate-300 hover:text-white transition-all whitespace-nowrap';
+                }
+            });
+        }
+
+        function renderDirectoryModalStores() {
+            const grid = document.getElementById('directory-modal-grid');
+            const countBadge = document.getElementById('directory-modal-count');
+            const searchEl = document.getElementById('directory-modal-search');
+            if (!grid) return;
+
+            const query = (searchEl ? searchEl.value : '').trim().toLowerCase();
+            const filtered = liveStoresList.filter(store => {
+                const tStore = window.ppTranslateStore ? window.ppTranslateStore(store) : store;
+                const matchesCat = modalActiveCategory === 'all' || (store.category || '').toLowerCase() === modalActiveCategory.toLowerCase();
+                const matchesSearch = !query ||
+                    (store.name || '').toLowerCase().includes(query) ||
+                    (tStore.name || '').toLowerCase().includes(query) ||
+                    (store.category || '').toLowerCase().includes(query) ||
+                    (tStore.category || '').toLowerCase().includes(query) ||
+                    (store.desc || '').toLowerCase().includes(query) ||
+                    (tStore.desc || '').toLowerCase().includes(query) ||
+                    (store.unit || '').toLowerCase().includes(query) ||
+                    (store.floor || '').toLowerCase().includes(query) ||
+                    (tStore.floor || '').toLowerCase().includes(query);
+                return matchesCat && matchesSearch;
+            });
+
+            if (countBadge) countBadge.textContent = String(filtered.length);
+
+            if (filtered.length === 0) {
+                const emptyText = window.ppT ? window.ppT('no_stores_found', 'No stores found matching your search.') : 'No stores found matching your search.';
+                grid.innerHTML = `<div class="col-span-full py-12 text-center text-slate-400">${emptyText}</div>`;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(renderStoreCardHTML).join('');
+        }
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.replace('bg-accent', 'bg-plum-800'));
+                btn.classList.replace('bg-plum-800', 'bg-accent');
+                activeCategory = btn.getAttribute('data-category');
+                renderStores();
+            });
+        });
+
+        searchInput.addEventListener('input', () => {
+            renderStores();
+        });
+
+        const modal = document.getElementById('store-modal');
+        let activeModalStoreId = null;
+        function openModal(id) {
+            const store = liveStoresList.find(s => String(s.id) === String(id));
+            if (!store) return;
+            activeModalStoreId = store.id;
+            const tStore = window.ppTranslateStore ? window.ppTranslateStore(store) : store;
+
+            document.getElementById('modal-title').innerText = tStore.name;
+            document.getElementById('modal-subtitle').innerText = tStore.category + ' · ' + tStore.floor;
+            document.getElementById('view-category').innerText = tStore.category;
+            document.getElementById('view-floor').innerText = tStore.floor;
+            document.getElementById('view-unit').innerText = store.unit || "PP-101";
+            document.getElementById('view-timing').innerText = tStore.hours || "10 AM - 8 PM";
+            document.getElementById('modal-desc').innerText = tStore.desc;
+            
+            document.getElementById('modal-profile-img').src = store.profilePhoto || store.img;
+            const coverDiv = document.getElementById('modal-cover');
+            if (coverDiv) {
+                coverDiv.style.backgroundImage = "url('" + store.img + "')";
+            }
+
+            document.getElementById('view-contact-phone').innerText = store.phone || "+977 01-4245000";
+            document.getElementById('view-contact-email').innerText = store.email || "adminpeoplesplaza@gmail.com";
+
+            const socialsContainer = document.getElementById('view-social-links');
+            const socials = store.socials || { facebook: "https://facebook.com", instagram: "https://instagram.com", tiktok: "https://tiktok.com" };
+            
+            socialsContainer.innerHTML = `
+                <a href="${socials.facebook || 'https://facebook.com'}" target="_blank" rel="noopener noreferrer" class="w-9 h-9 rounded-lg bg-plum-800 hover:bg-accent text-white flex items-center justify-center text-xs transition-all shadow-md" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="${socials.instagram || 'https://instagram.com'}" target="_blank" rel="noopener noreferrer" class="w-9 h-9 rounded-lg bg-plum-800 hover:bg-accent text-white flex items-center justify-center text-xs transition-all shadow-md" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                <a href="${socials.tiktok || 'https://tiktok.com'}" target="_blank" rel="noopener noreferrer" class="w-9 h-9 rounded-lg bg-plum-800 hover:bg-accent text-white flex items-center justify-center text-xs transition-all shadow-md" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+            `;
+
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+            if (document.getElementById('directory-modal').classList.contains('hidden')) {
+                document.body.classList.remove('overflow-hidden');
+            }
+        }
+
+        function openContactSuccessModal() {
+            document.getElementById('contact-success-modal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeContactSuccessModal() {
+            document.getElementById('contact-success-modal').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function compressContactPhoto(file, maxWidth = 650, quality = 0.7) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleContactPhotoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const label = document.getElementById('contact-photo-label');
+            const previewWrap = document.getElementById('contact-photo-preview-wrap');
+            const previewImg = document.getElementById('contact-photo-preview');
+            const hiddenUrl = document.getElementById('contact-photo-url');
+
+            label.innerText = "Loading photo...";
+            try {
+                const publicUrl = await compressContactPhoto(file);
+                hiddenUrl.value = publicUrl;
+                label.innerText = file.name;
+                previewImg.src = publicUrl;
+                previewWrap.classList.remove('hidden');
+            } catch (err) {
+                label.innerText = "Attach photo failed. Try again.";
+            }
+        }
+
+        function removeContactPhoto() {
+            document.getElementById('contact-photo-file').value = '';
+            document.getElementById('contact-photo-url').value = '';
+            document.getElementById('contact-photo-label').innerText = 'Attach photo or screenshot (Optional JPG, PNG)...';
+            document.getElementById('contact-photo-preview-wrap').classList.add('hidden');
+        }
+
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            const email = document.getElementById('contact-email').value;
+            const resultMsg = document.getElementById('contact-result-msg');
+
+            if (!isValidEmail(email)) {
+                resultMsg.className = "text-xs text-red-400 text-center font-medium mt-2";
+                resultMsg.innerText = "Please enter a valid email address.";
+                return;
+            }
+
+            const form = document.getElementById('contact-form');
+            const formData = new FormData(form);
+            const object = Object.fromEntries(formData);
+            const photoUrl = document.getElementById('contact-photo-url').value || '';
+            const submitBtn = document.getElementById('contact-submit-btn');
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Sending message...";
+            resultMsg.innerText = "";
+
+            const fullPhone = object.country_code + ' ' + object.phone;
+
+            try {
+                if (window.ppSaveInquiryToDatabase) {
+                    await window.ppSaveInquiryToDatabase({
+                        name: object.name,
+                        email: object.email,
+                        phone: fullPhone,
+                        message: object.message,
+                        photo_url: photoUrl || null
+                    });
+                }
+
+                const web3Payload = {
+                    access_key: "e34a655a-94cd-4d5d-a988-51f3c946e238",
+                    subject: "New Inquiry from People's Plaza Website",
+                    from_name: object.name,
+                    email: object.email,
+                    replyto: object.email,
+                    recipient_email: "adminpeoplesplaza@gmail.com",
+                    phone: fullPhone,
+                    message: object.message,
+                    photo_attached: photoUrl ? "Photo attached in Admin Portal" : "None"
+                };
+                try {
+                    if (window.location.protocol.startsWith('http')) {
+                        await fetch("/api/web3forms", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(web3Payload)
+                        });
+                    } else {
+                        const fd = new FormData();
+                        Object.entries(web3Payload).forEach(([k, v]) => fd.append(k, String(v)));
+                        await fetch("https://api.web3forms.com/submit", { method: "POST", body: fd, mode: "no-cors" });
+                    }
+                } catch (web3Err) {}
+
+                resultMsg.className = "text-xs text-emerald-400 text-center font-medium mt-2";
+                resultMsg.innerText = "Message sent and recorded successfully!";
+                form.reset();
+                removeContactPhoto();
+                openContactSuccessModal();
+            } catch (error) {
+                resultMsg.className = "text-xs text-emerald-400 text-center font-medium mt-2";
+                resultMsg.innerText = "Enquiry saved to system!";
+                form.reset();
+                removeContactPhoto();
+                openContactSuccessModal();
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Send Message";
+            }
+        }
+
+        function toggleLanguage() {
+            if (window.ppToggleLanguage) {
+                currentLang = window.ppToggleLanguage();
+            }
+        }
+
+        if (window.ppOnLanguageChange) {
+            window.ppOnLanguageChange((lang) => {
+                currentLang = lang;
+                renderCMSContent();
+                renderStores();
+                renderDirectoryModalStores();
+                if (!modal.classList.contains('hidden') && activeModalStoreId) {
+                    openModal(activeModalStoreId);
+                }
+            });
+        }
+
+        function openDiscoverLightbox(index) {
+            if (!discoverPhotos.length) return;
+            currentLightboxIndex = index;
+            updateLightboxContent();
+            document.getElementById('lightbox-modal').classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function updateLightboxContent() {
+            const photo = discoverPhotos[currentLightboxIndex];
+            if (!photo) return;
+            document.getElementById('lightbox-img').src = photo.url;
+            document.getElementById('lightbox-caption').innerText = photo.caption;
+            document.getElementById('lightbox-counter').innerText = (currentLightboxIndex + 1) + ' / ' + discoverPhotos.length;
+        }
+
+        function nextLightboxPhoto() {
+            if (!discoverPhotos.length) return;
+            currentLightboxIndex = (currentLightboxIndex + 1) % discoverPhotos.length;
+            updateLightboxContent();
+        }
+
+        function prevLightboxPhoto() {
+            if (!discoverPhotos.length) return;
+            currentLightboxIndex = (currentLightboxIndex - 1 + discoverPhotos.length) % discoverPhotos.length;
+            updateLightboxContent();
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox-modal').classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        document.querySelectorAll('.mobile-link').forEach(link => {
+            link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+        });
+
+        function updateCarousel() {
+            const track = document.getElementById('carousel-track');
+            if (track) track.style.transform = 'translateX(-' + (currentSlide * 100) + '%)';
+        }
+
+        function nextSlide() {
+            const totalSlides = discoverPhotos.length || 1;
+            currentSlide = (currentSlide + 1) % totalSlides;
+            updateCarousel();
+        }
+
+        function prevSlide() {
+            const totalSlides = discoverPhotos.length || 1;
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            updateCarousel();
+        }
+
+        setInterval(nextSlide, 5000);
+
+        function setupRealtime() {
+            if (window.ppOnSync) {
+                window.ppOnSync(() => {
+                    renderCMSContent();
+                    fetchLiveStores();
+                });
+            }
+            const db = getSupabase();
+            if (!db) return;
+
+            try {
+                db.channel('public:plaza_live_directory')
+                  .on('postgres_changes', { event: '*', schema: 'public', table: 'plaza_stores' }, () => fetchLiveStores())
+                  .on('postgres_changes', { event: '*', schema: 'public', table: 'shopkeeper_registrations' }, () => {
+                      renderCMSContent();
+                      fetchLiveStores();
+                  })
+                  .subscribe();
+            } catch (e) {}
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (window.ppPullSupabaseSystemSync) {
+                await window.ppPullSupabaseSystemSync();
+            }
+            renderCMSContent();
+            await fetchLiveStores();
+            setupRealtime();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,1517 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Dashboard & Live CMS | People's Plaza</title>
+<link rel="icon" type="image/png" href="/peoples-plaza-logo.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="supabase-config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+  body { font-family: Inter, system-ui, sans-serif; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .cms-sub-panel { display: none; }
+  .cms-sub-panel.active { display: block; }
+</style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
+
+<header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
+  <div class="max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="flex items-center shrink-0" aria-label="People's Plaza Home">
+        <img id="admin-header-logo" src="/peoples-plaza-logo.png" alt="People's Plaza Logo" class="h-10 w-auto object-contain shrink-0" onerror="this.onerror=null;this.src=window.PP_LOGO_DATA_URL||'peoples-plaza-logo.png'">
+      </a>
+      <div>
+        <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white" data-i18n="admin.header_title">Admin & Live CMS</h1>
+        <p class="text-[11px] text-pink-400 font-medium flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span data-i18n="admin.header_sub">Two-Way Shopkeeper & Website Sync Active</span>
+        </p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="pp-lang-switcher" role="group" aria-label="Language selector">
+        <button type="button" onclick="window.ppSetLanguage('en')" data-lang-switch="en" class="pp-lang-btn active">EN</button>
+        <button type="button" onclick="window.ppSetLanguage('ne')" data-lang-switch="ne" class="pp-lang-btn">नेपाली</button>
+      </div>
+      <a href="index.html" class="rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-semibold hover:bg-slate-700 transition" data-i18n="login.view_live_site">View Live Site ↗</a>
+      <button id="logout-btn" class="rounded-xl bg-pink-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-pink-500 transition" data-i18n="portal.logout">Logout</button>
+    </div>
+  </div>
+</header>
+<main class="max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-grow w-full space-y-4">
+  <div id="admin-alert" role="status" aria-live="polite" class="hidden rounded-xl p-3.5 text-xs font-bold shadow-lg"></div>
+
+  <div class="flex flex-wrap gap-2 border-b border-slate-800 pb-3">
+    <button onclick="switchTab('stores')" id="btn-tab-stores" class="tab-btn rounded-xl px-4 py-2 text-xs sm:text-sm font-bold bg-pink-600 text-white shadow-lg shadow-pink-600/20 transition">
+      <i class="fa-solid fa-store mr-1.5"></i><span data-i18n="admin.tab_stores">Active Stores & Directory</span> (<span id="stores-tab-badge">0</span>)
+    </button>
+    <button onclick="switchTab('registrations')" id="btn-tab-registrations" class="tab-btn rounded-xl px-4 py-2 text-xs sm:text-sm font-bold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition">
+      <i class="fa-solid fa-id-card mr-1.5"></i><span data-i18n="admin.tab_registrations">Shopkeeper Registrations</span> <span id="reg-badge" class="ml-1.5 rounded-full bg-pink-600/30 px-2 py-0.5 text-xs text-pink-300">0</span>
+    </button>
+    <button onclick="switchTab('cms')" id="btn-tab-cms" class="tab-btn rounded-xl px-4 py-2 text-xs sm:text-sm font-bold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition">
+      <i class="fa-solid fa-sliders mr-1.5"></i><span data-i18n="admin.tab_cms">Website CMS & Media</span>
+    </button>
+    <button onclick="switchTab('inquiries')" id="btn-tab-inquiries" class="tab-btn rounded-xl px-4 py-2 text-xs sm:text-sm font-bold bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition">
+      <i class="fa-solid fa-envelope mr-1.5"></i><span data-i18n="admin.tab_inquiries">Customer Messages</span> <span id="msg-badge" class="ml-1.5 rounded-full bg-pink-600/30 px-2 py-0.5 text-xs text-pink-300">0</span>
+    </button>
+  </div>
+
+  <!-- TAB 1: ALL STORES & DIRECTORY -->
+  <section id="tab-stores" class="tab-content active space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-3xl shadow-xl">
+      <div>
+        <h2 class="text-lg font-black text-white" data-i18n="admin.stores_title">All Stores & Outlet Directory</h2>
+        <p class="text-xs text-slate-400 mt-0.5" data-i18n="admin.stores_sub">Any update made here immediately syncs to the Shopkeeper Portal and Live Homepage.</p>
+      </div>
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <button onclick="downloadShopDetailsExcel()" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-bold text-white transition flex items-center gap-2 shadow-md">
+          <i class="fa-solid fa-file-excel text-xs"></i> <span data-i18n="admin.btn_excel">Download Excel (.xlsx)</span>
+        </button>
+        <button onclick="openStoreModal()" class="rounded-xl bg-pink-600 px-4 py-2 text-xs font-bold text-white hover:bg-pink-500 transition shadow-lg shadow-pink-600/20" data-i18n="admin.btn_add_store">
+          + Add New Store
+        </button>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 items-center justify-between bg-slate-900/60 p-3.5 rounded-2xl border border-slate-800/80">
+      <div class="relative w-full md:w-80">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+        <input type="text" id="store-search" oninput="filterStores()" placeholder="Search stores by name, floor, unit, email..." data-i18n-placeholder="admin.search_stores" class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-pink-500">
+      </div>
+      <div class="flex items-center gap-3 text-xs text-slate-400">
+        <span id="store-count-label">Loading stores...</span>
+        <button onclick="loadAdminData()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold transition"><i class="fa-solid fa-rotate-right mr-1"></i> <span data-i18n="admin.btn_refresh">Refresh</span></button>
+      </div>
+    </div>
+
+    <div class="rounded-3xl border border-slate-800 bg-slate-900 overflow-hidden shadow-xl">
+      <div class="overflow-x-auto max-h-[60vh]">
+        <table class="w-full text-left border-collapse">
+          <thead class="sticky top-0 z-10 bg-slate-950">
+            <tr class="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+              <th class="py-3 px-4 min-w-[200px]" data-i18n="admin.th_store_name">Store Name</th>
+              <th class="py-3 px-3 min-w-[130px]" data-i18n="admin.th_floor_unit">Floor / Unit</th>
+              <th class="py-3 px-3 min-w-[100px]" data-i18n="admin.th_category">Category</th>
+              <th class="py-3 px-3 min-w-[130px]" data-i18n="admin.th_username">Login Username</th>
+              <th class="py-3 px-3 min-w-[170px]" data-i18n="admin.th_email">Registered Email</th>
+              <th class="py-3 px-3 min-w-[100px]" data-i18n="admin.th_status">Status</th>
+              <th class="py-3 px-4 text-right min-w-[160px]" data-i18n="admin.th_actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-stores-tbody" class="divide-y divide-slate-800/80 text-xs"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 2: SHOPKEEPER REGISTRATIONS -->
+  <section id="tab-registrations" class="tab-content space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-3xl shadow-xl">
+      <div>
+        <h2 class="text-lg font-black text-white" data-i18n="admin.reg_title">Live Shopkeeper Registrations</h2>
+        <p class="text-xs text-slate-400 mt-0.5" data-i18n="admin.reg_sub">Review vendor applications, edit details (synced live with Shopkeeper Portal), approve, or delete.</p>
+      </div>
+      <button onclick="downloadShopDetailsExcel()" class="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-bold text-white transition flex items-center gap-2 shadow-md">
+        <i class="fa-solid fa-file-excel text-xs"></i> <span data-i18n="admin.btn_export_reg">Export Registrations (.xlsx)</span>
+      </button>
+    </div>
+
+    <div class="rounded-3xl border border-slate-800 bg-slate-900 overflow-hidden shadow-xl">
+      <div class="overflow-x-auto max-h-[62vh]">
+        <table class="w-full text-left border-collapse">
+          <thead class="sticky top-0 z-10 bg-slate-950">
+            <tr class="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+              <th class="py-3 px-4 min-w-[200px]" data-i18n="admin.th_shop_cover">Shop & Cover</th>
+              <th class="py-3 px-3 min-w-[140px]" data-i18n="admin.th_owner_user">Owner / Username</th>
+              <th class="py-3 px-3 min-w-[130px]" data-i18n="admin.th_cat_floor">Category & Floor</th>
+              <th class="py-3 px-3 min-w-[170px]" data-i18n="admin.th_contact">Contact Info</th>
+              <th class="py-3 px-3 min-w-[120px]" data-i18n="admin.th_status">Status</th>
+              <th class="py-3 px-4 text-right min-w-[180px]" data-i18n="admin.th_actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="registrations-tbody" class="divide-y divide-slate-800/80 text-xs"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 3: WEBSITE CMS & MEDIA -->
+  <section id="tab-cms" class="tab-content">
+    <div class="max-w-6xl mx-auto rounded-3xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-2xl space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+        <div>
+          <span class="px-2.5 py-0.5 rounded-full bg-pink-600/20 text-pink-400 text-[10px] font-extrabold uppercase tracking-widest" data-i18n="admin.cms_badge">Live Website CMS</span>
+          <h2 class="text-base sm:text-lg font-black text-white mt-0.5" data-i18n="admin.cms_title">Manage Photos, Captions, Contacts & Socials</h2>
+        </div>
+        <div class="flex flex-wrap sm:flex-nowrap gap-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 shrink-0">
+          <button type="button" onclick="switchCmsSubTab('logo')" id="cms-btn-logo" class="cms-sub-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-600 text-white transition">
+            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i><span data-i18n="admin.cms_tab_logo">Logo & Brand</span>
+          </button>
+          <button type="button" onclick="switchCmsSubTab('carousel')" id="cms-btn-carousel" class="cms-sub-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-images mr-1"></i><span data-i18n="admin.cms_tab_carousel">Carousel Gallery</span>
+          </button>
+          <button type="button" onclick="switchCmsSubTab('about')" id="cms-btn-about" class="cms-sub-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-building mr-1"></i><span data-i18n="admin.cms_tab_about">About Page</span>
+          </button>
+          <button type="button" onclick="switchCmsSubTab('contacts')" id="cms-btn-contacts" class="cms-sub-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-address-book mr-1"></i><span data-i18n="admin.cms_tab_contacts">Phones, Emails & Socials</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 1: LOGO & BRAND -->
+      <div id="cms-sub-logo" class="cms-sub-panel active">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center bg-slate-950/70 border border-slate-800 rounded-2xl p-4 sm:p-5">
+          <div class="md:col-span-4 flex flex-col items-center justify-center p-4 rounded-2xl bg-slate-900 border border-slate-800 text-center space-y-3">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Current Active Website Logo</div>
+            <img id="cms-logo-preview" src="/peoples-plaza-logo.png" alt="People's Plaza Logo" class="h-24 w-auto object-contain">
+            <div class="flex gap-2">
+              <label class="cursor-pointer rounded-xl bg-pink-600 hover:bg-pink-500 px-3 py-1.5 text-[11px] font-bold text-white transition flex items-center gap-1.5 shadow">
+                <i class="fa-solid fa-upload"></i> Upload from Device
+                <input type="file" accept="image/*" class="hidden" onchange="handleCmsLogoUpload(event)">
+              </label>
+              <button type="button" onclick="deleteOrResetCmsLogo()" class="rounded-xl bg-red-600/20 border border-red-600/30 hover:bg-red-600 hover:text-white px-3 py-1.5 text-[11px] font-bold text-red-300 transition">
+                Delete / Reset
+              </button>
+            </div>
+          </div>
+
+          <div class="md:col-span-8 space-y-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-300">Brand Title
+                <input type="text" id="cms-brand-title" placeholder="People's Plaza" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-xs text-white focus:border-pink-500 focus:outline-none">
+              </label>
+              <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-300">Brand Subtitle / Location
+                <input type="text" id="cms-brand-subtitle" placeholder="Kathmandu" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-xs text-white focus:border-pink-500 focus:outline-none">
+              </label>
+            </div>
+
+            <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-300">Logo Image URL or Data URL
+              <input type="text" id="cms-logo-url-input" placeholder="/peoples-plaza-logo.png" oninput="document.getElementById('cms-logo-preview').src = this.value" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-xs text-white focus:border-pink-500 focus:outline-none">
+            </label>
+
+            <div class="flex justify-end pt-1">
+              <button type="button" onclick="saveCmsLogoAndBrand()" class="rounded-xl bg-pink-600 hover:bg-pink-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-pink-600/20 transition">
+                <i class="fa-solid fa-floppy-disk mr-1.5"></i>Save Logo & Brand Live
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 2: DISCOVER CAROUSEL PHOTOS & CAPTIONS -->
+      <div id="cms-sub-carousel" class="cms-sub-panel space-y-3.5">
+        <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 flex flex-wrap items-end gap-2.5">
+          <div class="flex-1 min-w-[180px]">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Add Photo from Device or URL</label>
+            <div class="flex gap-1.5">
+              <label class="cursor-pointer rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 text-xs font-bold text-pink-400 shrink-0 flex items-center gap-1.5">
+                <i class="fa-solid fa-upload"></i> <span id="new-slide-file-label">Device Photo</span>
+                <input type="file" accept="image/*" class="hidden" onchange="handleNewSlideFile(event)">
+              </label>
+              <input type="text" id="new-slide-url" placeholder="Or paste image URL..." class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white focus:border-pink-500 focus:outline-none">
+            </div>
+          </div>
+          <div class="w-full sm:w-36">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Badge Tag</label>
+            <input type="text" id="new-slide-tag" placeholder="e.g. Shopping Hub" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white focus:border-pink-500 focus:outline-none">
+          </div>
+          <div class="flex-1 min-w-[180px]">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Slide Caption / Title</label>
+            <input type="text" id="new-slide-caption" placeholder="e.g. New Season Collection" class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white focus:border-pink-500 focus:outline-none">
+          </div>
+          <button type="button" onclick="addCmsCarouselSlide()" class="rounded-xl bg-pink-600 hover:bg-pink-500 px-4 py-2 text-xs font-bold text-white shadow-md transition shrink-0">
+            + Add Photo Slide
+          </button>
+        </div>
+
+        <div id="cms-carousel-list" class="grid grid-cols-1 md:grid-cols-3 gap-3.5 max-h-[340px] overflow-y-auto pr-1">
+          <!-- Carousel cards injected by JS -->
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 3: ABOUT US PAGE PHOTOS & CAPTIONS -->
+      <div id="cms-sub-about" class="cms-sub-panel">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 bg-slate-950/70 border border-slate-800 rounded-2xl p-4">
+          <div class="lg:col-span-6 space-y-2.5">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400">About Us Text & Headlines</h3>
+            <label class="block text-[10px] font-bold uppercase text-slate-400">Section Main Heading
+              <input type="text" id="cms-about-title-input" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-2 text-xs text-white focus:border-pink-500 focus:outline-none">
+            </label>
+            <label class="block text-[10px] font-bold uppercase text-slate-400">Paragraph 1
+              <textarea id="cms-about-desc1-input" rows="2" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-2 text-xs text-white focus:border-pink-500 focus:outline-none"></textarea>
+            </label>
+            <label class="block text-[10px] font-bold uppercase text-slate-400">Paragraph 2
+              <textarea id="cms-about-desc2-input" rows="2" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 p-2 text-xs text-white focus:border-pink-500 focus:outline-none"></textarea>
+            </label>
+            <button type="button" onclick="saveCmsAboutText()" class="rounded-xl bg-pink-600 hover:bg-pink-500 px-4 py-2 text-xs font-bold text-white shadow transition">
+              Save About Us Text Live
+            </button>
+          </div>
+
+          <div class="lg:col-span-6 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400">About Page Photos & Captions</h3>
+              <label class="cursor-pointer rounded-xl bg-pink-600 hover:bg-pink-500 px-3 py-1.5 text-[11px] font-bold text-white transition flex items-center gap-1.5 shadow">
+                <i class="fa-solid fa-plus"></i> Add Photo from Device
+                <input type="file" accept="image/*" class="hidden" onchange="addCmsAboutPhotoFromDevice(event)">
+              </label>
+            </div>
+            <div id="cms-about-photos-list" class="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
+              <!-- About photos injected by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 4: PHONES, EMAILS & SOCIAL MEDIA LINKS -->
+      <div id="cms-sub-contacts" class="cms-sub-panel">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <!-- Phone Numbers Box -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between space-y-3">
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400"><i class="fa-solid fa-phone mr-1.5"></i>Phone Numbers</h3>
+              </div>
+              <div id="cms-phones-list" class="space-y-2 max-h-[190px] overflow-y-auto pr-1"></div>
+            </div>
+            <div class="pt-2 border-t border-slate-800 space-y-1.5">
+              <div class="grid grid-cols-2 gap-1.5">
+                <input type="text" id="new-phone-label" placeholder="Label (e.g. Support)" class="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] text-white">
+                <input type="text" id="new-phone-val" placeholder="+977 01-4245000" class="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] text-white">
+              </div>
+              <button type="button" onclick="addCmsPhone()" class="w-full rounded-lg bg-pink-600 hover:bg-pink-500 py-1.5 text-[11px] font-bold text-white transition">+ Add Phone Number</button>
+            </div>
+          </div>
+
+          <!-- Emails & Business Hours Box -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between space-y-3">
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400"><i class="fa-solid fa-envelope mr-1.5"></i>Emails & Hours</h3>
+              </div>
+              <div id="cms-emails-list" class="space-y-2 max-h-[135px] overflow-y-auto pr-1"></div>
+              <div class="pt-1">
+                <label class="block text-[10px] font-bold uppercase text-slate-400">Opening Hours
+                  <div class="flex gap-1.5 mt-1">
+                    <input type="text" id="cms-hours-input" placeholder="Sunday – Saturday: 10:00 AM – 8:00 PM" class="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] text-white">
+                    <button type="button" onclick="saveCmsHours()" class="rounded-lg bg-slate-800 hover:bg-pink-600 px-2.5 py-1.5 text-[11px] font-bold text-white shrink-0">Save</button>
+                  </div>
+                </label>
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-800 space-y-1.5">
+              <div class="grid grid-cols-2 gap-1.5">
+                <input type="text" id="new-email-label" placeholder="Label (e.g. Leasing)" class="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] text-white">
+                <input type="email" id="new-email-val" placeholder="info@peoplesplaza.com" class="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] text-white">
+              </div>
+              <button type="button" onclick="addCmsEmail()" class="w-full rounded-lg bg-pink-600 hover:bg-pink-500 py-1.5 text-[11px] font-bold text-white transition">+ Add Email Address</button>
+            </div>
+          </div>
+
+          <!-- Social Media Links Box -->
+          <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between space-y-3">
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-pink-400"><i class="fa-solid fa-share-nodes mr-1.5"></i>Social Media Links</h3>
+              </div>
+              <div id="cms-socials-list" class="space-y-2 max-h-[190px] overflow-y-auto pr-1"></div>
+            </div>
+            <div class="pt-2 border-t border-slate-800 space-y-1.5">
+              <div class="grid grid-cols-2 gap-1.5">
+                <select id="new-social-platform" class="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-[11px] text-white">
+                  <option value="Facebook|fa-brands fa-facebook-f">Facebook</option>
+                  <option value="Instagram|fa-brands fa-instagram">Instagram</option>
+                  <option value="TikTok|fa-brands fa-tiktok">TikTok</option>
+                  <option value="YouTube|fa-brands fa-youtube">YouTube</option>
+                  <option value="WhatsApp|fa-brands fa-whatsapp">WhatsApp</option>
+                  <option value="X / Twitter|fa-brands fa-x-twitter">X / Twitter</option>
+                  <option value="LinkedIn|fa-brands fa-linkedin-in">LinkedIn</option>
+                </select>
+                <input type="url" id="new-social-url" placeholder="https://..." class="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[11px] text-white">
+              </div>
+              <button type="button" onclick="addCmsSocial()" class="w-full rounded-lg bg-pink-600 hover:bg-pink-500 py-1.5 text-[11px] font-bold text-white transition">+ Add Social Link</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB 4: CUSTOMER INQUIRIES -->
+  <section id="tab-inquiries" class="tab-content space-y-4">
+    <div class="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-3xl shadow-xl">
+      <h2 class="text-lg font-black text-white" data-i18n="admin.inq_title">Customer Messages & Feedback</h2>
+      <p class="text-xs text-slate-400 mt-0.5" data-i18n="admin.inq_sub">Messages submitted through the homepage contact form (Web3Forms and Supabase synchronized).</p>
+    </div>
+
+    <div class="rounded-3xl border border-slate-800 bg-slate-900 overflow-hidden shadow-xl">
+      <div class="overflow-x-auto max-h-[62vh]">
+        <table class="w-full text-left border-collapse">
+          <thead class="sticky top-0 z-10 bg-slate-950">
+            <tr class="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+              <th class="py-3 px-4 min-w-[100px]" data-i18n="admin.th_date">Date</th>
+              <th class="py-3 px-3 min-w-[170px]" data-i18n="admin.th_sender">Sender</th>
+              <th class="py-3 px-3 min-w-[260px]" data-i18n="admin.th_message">Message</th>
+              <th class="py-3 px-3 min-w-[80px]" data-i18n="admin.th_photo">Photo</th>
+              <th class="py-3 px-4 text-right min-w-[130px]" data-i18n="admin.th_actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="inquiries-tbody" class="divide-y divide-slate-800/80 text-xs"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- STORE EDIT/CREATE MODAL -->
+<div id="store-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm hidden p-4 overflow-y-auto">
+  <div class="w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-900 p-5 sm:p-6 shadow-2xl my-auto">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3.5">
+      <h3 id="store-modal-title" class="text-base font-black text-white" data-i18n="admin.modal_add_edit">Add / Edit Store</h3>
+      <button onclick="closeStoreModal()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+    </div>
+    <form id="store-form" onsubmit="saveStore(event)" class="space-y-3">
+      <input type="hidden" id="edit-store-id">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="portal.shop_name">Store Name*</span>
+          <input id="store-name" type="text" required placeholder="e.g. Zara Fashion Hub" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="portal.shop_name_ne">Store Name (Nepali)</span>
+          <input id="store-name-ne" type="text" placeholder="जस्तै: जारा फेसन हब" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="portal.floor_level">Floor Level*</span>
+          <select id="store-floor" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+            <option value="Ground Floor" data-i18n="floor.ground">Ground Floor</option>
+            <option value="1st Floor" data-i18n="floor.1st">1st Floor</option>
+            <option value="2nd Floor" data-i18n="floor.2nd">2nd Floor</option>
+            <option value="3rd Floor" data-i18n="floor.3rd">3rd Floor</option>
+            <option value="4th Floor" data-i18n="floor.4th">4th Floor</option>
+            <option value="5th Floor" data-i18n="floor.5th">5th Floor</option>
+          </select>
+        </label>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="portal.category">Category*</span>
+          <select id="store-category" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+            <option value="Fashion" data-i18n="cat_fashion">Fashion</option>
+            <option value="Footwear" data-i18n="cat_footwear">Footwear</option>
+            <option value="Cosmetics" data-i18n="cat_cosmetics">Cosmetics</option>
+            <option value="Electronics" data-i18n="cat_electronics">Electronics</option>
+          </select>
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="portal.unit_no">Shop Unit*</span>
+          <input id="store-unit" type="text" placeholder="PP-101" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="portal.contact_phone">Contact Phone</span>
+          <input id="store-phone" type="text" placeholder="+977 01-4245000" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="admin.th_email">Registered Email</span>
+          <input id="store-reg-email" type="email" placeholder="shopkeeper@example.com" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="admin.th_username">Login Username</span>
+          <input id="store-username" type="text" placeholder="vendor_username" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Login Password
+          <input id="store-password" type="text" placeholder="Assign password (min 6)" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 items-end">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Image / Banner URL
+          <input id="store-image" type="text" placeholder="https://images.unsplash.com/..." class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="cursor-pointer rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 p-2.5 text-xs font-bold text-pink-400 flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-upload"></i> Upload Store Photo from Device
+          <input type="file" accept="image/*" class="hidden" onchange="handleStoreModalPhoto(event)">
+        </label>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="shop.description">Description</span>
+          <textarea id="store-desc" rows="2" placeholder="Brief outlet description..." class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs"></textarea>
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider"><span data-i18n="portal.store_desc_ne">Description (Nepali)</span>
+          <textarea id="store-desc-ne" rows="2" placeholder="पसलको संक्षिप्त विवरण नेपालीमा..." class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs"></textarea>
+        </label>
+      </div>
+      <div class="flex items-center gap-2 pt-1">
+        <input id="store-is-hidden" type="checkbox" class="h-4 w-4 rounded border-slate-700 bg-slate-950 text-pink-600">
+        <label for="store-is-hidden" class="text-xs font-semibold text-slate-300" data-i18n="admin.modal_hide_label">Hide this store from the live site directory</label>
+      </div>
+      <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+        <button type="button" onclick="closeStoreModal()" class="rounded-xl border border-slate-700 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-slate-800 transition" data-i18n="common.cancel">Cancel</button>
+        <button type="submit" id="save-store-submit-btn" class="rounded-xl bg-pink-600 px-5 py-2 text-xs font-bold text-white hover:bg-pink-500 transition" data-i18n="admin.modal_save_sync">Save & Sync to Shopkeeper Portal</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- SHOPKEEPER REGISTRATION VIEW/EDIT MODAL -->
+<div id="reg-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm hidden p-4 overflow-y-auto">
+  <div class="w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-900 p-5 sm:p-6 shadow-2xl my-auto">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3.5">
+      <h3 class="text-base font-black text-white">View & Edit Shopkeeper Registration</h3>
+      <button onclick="closeRegModal()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+    </div>
+    <form id="reg-form" onsubmit="saveRegistration(event)" class="space-y-3">
+      <input type="hidden" id="edit-reg-id">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Shop Name*
+          <input id="reg-shopname" type="text" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Owner / Username*
+          <input id="reg-owner" type="text" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Category*
+          <select id="reg-category" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+            <option value="Fashion">Fashion</option>
+            <option value="Footwear">Footwear</option>
+            <option value="Cosmetics">Cosmetics</option>
+            <option value="Electronics">Electronics</option>
+          </select>
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Floor Requested*
+          <input id="reg-floor" type="text" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Unit*
+          <input id="reg-unit" type="text" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Email Address*
+          <input id="reg-email" type="email" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Phone*
+          <input id="reg-phone" type="text" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+      </div>
+      <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Description
+        <textarea id="reg-desc" rows="2" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs"></textarea>
+      </label>
+      <div class="flex flex-wrap justify-between gap-3 pt-3 border-t border-slate-800">
+        <button type="button" onclick="approveFromModal()" class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition shadow-md">Approve & Publish Live</button>
+        <div class="flex gap-2">
+          <button type="button" onclick="closeRegModal()" class="rounded-xl border border-slate-700 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-slate-800 transition">Cancel</button>
+          <button type="submit" id="save-reg-submit-btn" class="rounded-xl bg-pink-600 px-5 py-2 text-xs font-bold text-white hover:bg-pink-500 transition">Save & Sync to Shopkeeper</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- CUSTOMER INQUIRY VIEW/EDIT MODAL -->
+<div id="inquiry-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm hidden p-4 overflow-y-auto">
+  <div class="w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-900 p-5 sm:p-6 shadow-2xl my-auto">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-800 mb-3.5">
+      <h3 class="text-base font-black text-white">View Customer Message</h3>
+      <button onclick="closeInquiryModal()" class="text-slate-400 hover:text-white font-bold text-lg">✕</button>
+    </div>
+    <form id="inquiry-form" onsubmit="saveInquiry(event)" class="space-y-3">
+      <input type="hidden" id="edit-inquiry-id">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Sender Name*
+          <input id="inquiry-name" type="text" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+        <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Email*
+          <input id="inquiry-email" type="email" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+        </label>
+      </div>
+      <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Phone
+        <input id="inquiry-phone" type="text" class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs">
+      </label>
+      <label class="block text-[11px] font-bold text-slate-300 uppercase tracking-wider">Message*
+        <textarea id="inquiry-message" rows="3" required class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs"></textarea>
+      </label>
+      <div id="inquiry-photo-section" class="hidden space-y-2 pt-1">
+        <div class="text-[11px] font-bold text-slate-300 uppercase tracking-wider">Attached Customer Photo</div>
+        <img id="inquiry-photo-img" src="" alt="Customer attachment" class="max-h-48 rounded-xl border border-slate-700 object-contain bg-slate-950 p-2">
+      </div>
+      <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+        <button type="button" onclick="closeInquiryModal()" class="rounded-xl border border-slate-700 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-slate-800 transition">Cancel</button>
+        <button type="submit" class="rounded-xl bg-pink-600 px-5 py-2 text-xs font-bold text-white hover:bg-pink-500 transition">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const ADMIN_SESSION_KEY = 'peoples_plaza_admin_session_v26';
+let allStores = [];
+let allRegistrations = [];
+let allInquiries = [];
+
+function getSupabase() {
+  return window.ppSupabase || null;
+}
+
+function showAlert(message, type = 'success') {
+  const alertBox = document.getElementById('admin-alert');
+  alertBox.className = `rounded-xl p-3.5 text-xs font-bold shadow-lg ${type === 'success' ? 'bg-emerald-950/95 border border-emerald-800 text-emerald-200' : 'bg-red-950/95 border border-red-800 text-red-200'}`;
+  alertBox.textContent = message;
+  alertBox.classList.remove('hidden');
+  setTimeout(() => alertBox.classList.add('hidden'), 5000);
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('bg-pink-600', 'text-white', 'shadow-lg', 'shadow-pink-600/20');
+    btn.classList.add('bg-slate-900', 'border', 'border-slate-800', 'text-slate-400');
+  });
+  document.getElementById(`tab-${tabId}`).classList.add('active');
+  const activeBtn = document.getElementById(`btn-tab-${tabId}`);
+  activeBtn.classList.remove('bg-slate-900', 'border', 'border-slate-800', 'text-slate-400');
+  activeBtn.classList.add('bg-pink-600', 'text-white', 'shadow-lg', 'shadow-pink-600/20');
+}
+
+function switchCmsSubTab(subId) {
+  document.querySelectorAll('.cms-sub-panel').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.cms-sub-btn').forEach(btn => {
+    btn.className = 'cms-sub-btn px-3 py-1.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition';
+  });
+  document.getElementById(`cms-sub-${subId}`).classList.add('active');
+  document.getElementById(`cms-btn-${subId}`).className = 'cms-sub-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-pink-600 text-white transition shadow';
+}
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  const db = getSupabase();
+  if (db) await db.auth.signOut().catch(() => {});
+  window.location.href = 'admin-login.html';
+});
+
+function compressLocalImage(file, maxWidth = 650, quality = 0.7) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = Math.round((h * maxWidth) / w);
+          w = maxWidth;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ==========================================
+// WEBSITE CMS FUNCTIONS
+// ==========================================
+function loadCmsEditor() {
+  const cms = window.ppGetCMS ? window.ppGetCMS() : window.PP_DEFAULT_CMS;
+  if (!cms) return;
+
+  document.getElementById('admin-header-logo').src = cms.logoUrl || '/peoples-plaza-logo.png';
+  document.getElementById('cms-logo-preview').src = cms.logoUrl || '/peoples-plaza-logo.png';
+  document.getElementById('cms-logo-url-input').value = cms.logoUrl || '/peoples-plaza-logo.png';
+  document.getElementById('cms-brand-title').value = cms.brandTitle || "People's Plaza";
+  document.getElementById('cms-brand-subtitle').value = cms.brandSubtitle || 'Kathmandu';
+
+  const carouselList = document.getElementById('cms-carousel-list');
+  const slides = cms.carouselSlides || [];
+  carouselList.innerHTML = slides.map((s, idx) => `
+    <div class="rounded-2xl border border-slate-800 bg-slate-900 p-3 flex flex-col justify-between gap-2.5 shadow">
+      <div class="relative h-28 rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+        <img src="${s.url}" alt="${s.caption}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=600'">
+        <label class="absolute bottom-2 right-2 cursor-pointer rounded-lg bg-black/75 hover:bg-pink-600 px-2 py-1 text-[10px] font-bold text-white transition">
+          <i class="fa-solid fa-camera mr-1"></i>Change Photo
+          <input type="file" accept="image/*" class="hidden" onchange="replaceCmsCarouselPhoto(event, '${s.id}')">
+        </label>
+      </div>
+      <div class="space-y-1.5">
+        <input type="text" value="${(s.tag || '').replace(/"/g, '&quot;')}" onchange="updateCmsCarouselField('${s.id}', 'tag', this.value)" placeholder="Tag (e.g. Shopping Hub)" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-[11px] text-pink-300 font-bold">
+        <input type="text" value="${(s.caption || '').replace(/"/g, '&quot;')}" onchange="updateCmsCarouselField('${s.id}', 'caption', this.value)" placeholder="Slide Caption" class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-white font-semibold">
+      </div>
+      <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+        <span class="text-[10px] text-slate-500 font-bold">Slide #${idx + 1}</span>
+        <button type="button" onclick="deleteCmsCarouselSlide('${s.id}')" class="rounded-lg bg-red-600/20 border border-red-600/30 hover:bg-red-600 hover:text-white px-2.5 py-1 text-[10px] font-bold text-red-300 transition">
+          <i class="fa-solid fa-trash mr-1"></i>Delete Photo
+        </button>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('cms-about-title-input').value = cms.aboutTitle || '';
+  document.getElementById('cms-about-desc1-input').value = cms.aboutDesc1 || '';
+  document.getElementById('cms-about-desc2-input').value = cms.aboutDesc2 || '';
+
+  const aboutPhotosList = document.getElementById('cms-about-photos-list');
+  const aboutPhotos = cms.aboutPhotos || [];
+  aboutPhotosList.innerHTML = aboutPhotos.map((p) => `
+    <div class="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 p-2.5">
+      <img src="${p.url}" alt="${p.caption}" class="w-16 h-14 rounded-lg object-cover border border-slate-700 shrink-0">
+      <div class="flex-1 space-y-1">
+        <input type="text" value="${(p.caption || '').replace(/"/g, '&quot;')}" onchange="updateCmsAboutCaption('${p.id}', this.value)" placeholder="About photo caption..." class="w-full rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-xs text-white">
+        <div class="flex items-center gap-2">
+          <label class="cursor-pointer text-[10px] font-bold text-pink-400 hover:underline">
+            <i class="fa-solid fa-upload mr-1"></i>Replace Photo
+            <input type="file" accept="image/*" class="hidden" onchange="replaceCmsAboutPhoto(event, '${p.id}')">
+          </label>
+          <button type="button" onclick="deleteCmsAboutPhoto('${p.id}')" class="text-[10px] font-bold text-red-400 hover:underline ml-auto">
+            <i class="fa-solid fa-trash mr-1"></i>Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  const phonesList = document.getElementById('cms-phones-list');
+  phonesList.innerHTML = (cms.phones || []).map((ph) => `
+    <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-2">
+      <input type="text" value="${(ph.label || '').replace(/"/g, '&quot;')}" onchange="updateCmsPhone('${ph.id}', 'label', this.value)" class="w-24 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] text-slate-300">
+      <input type="text" value="${(ph.value || '').replace(/"/g, '&quot;')}" onchange="updateCmsPhone('${ph.id}', 'value', this.value)" class="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-white font-semibold">
+      <button type="button" onclick="deleteCmsPhone('${ph.id}')" class="rounded-lg bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white px-2 py-1 text-[10px] font-bold transition">✕</button>
+    </div>
+  `).join('');
+
+  document.getElementById('cms-hours-input').value = cms.businessHours || 'Sunday – Saturday: 10:00 AM – 8:00 PM';
+  const emailsList = document.getElementById('cms-emails-list');
+  emailsList.innerHTML = (cms.emails || []).map((em) => `
+    <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-2">
+      <input type="text" value="${(em.label || '').replace(/"/g, '&quot;')}" onchange="updateCmsEmail('${em.id}', 'label', this.value)" class="w-24 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] text-slate-300">
+      <input type="email" value="${(em.value || '').replace(/"/g, '&quot;')}" onchange="updateCmsEmail('${em.id}', 'value', this.value)" class="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-white font-semibold">
+      <button type="button" onclick="deleteCmsEmail('${em.id}')" class="rounded-lg bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white px-2 py-1 text-[10px] font-bold transition">✕</button>
+    </div>
+  `).join('');
+
+  const socialsList = document.getElementById('cms-socials-list');
+  socialsList.innerHTML = (cms.socialLinks || []).map((soc) => `
+    <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-2">
+      <span class="w-6 h-6 rounded-lg bg-slate-800 text-pink-400 flex items-center justify-center text-xs shrink-0"><i class="${soc.icon || 'fa-solid fa-share-nodes'}"></i></span>
+      <input type="text" value="${(soc.platform || '').replace(/"/g, '&quot;')}" onchange="updateCmsSocial('${soc.id}', 'platform', this.value)" class="w-20 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] text-slate-200 font-bold">
+      <input type="url" value="${(soc.url || '').replace(/"/g, '&quot;')}" onchange="updateCmsSocial('${soc.id}', 'url', this.value)" class="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-[11px] text-white">
+      <button type="button" onclick="deleteCmsSocial('${soc.id}')" class="rounded-lg bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white px-2 py-1 text-[10px] font-bold transition">✕</button>
+    </div>
+  `).join('');
+}
+
+async function handleCmsLogoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const dataUrl = await compressLocalImage(file, 400, 0.85);
+  document.getElementById('cms-logo-preview').src = dataUrl;
+  document.getElementById('cms-logo-url-input').value = dataUrl;
+  window.ppSaveCMS({ logoUrl: dataUrl });
+  loadCmsEditor();
+  showAlert('New logo uploaded from device and updated live across the website!');
+}
+
+function selectPresetLogo(url) {
+  document.getElementById('cms-logo-preview').src = url;
+  document.getElementById('cms-logo-url-input').value = url;
+  window.ppSaveCMS({ logoUrl: url });
+  loadCmsEditor();
+  showAlert('Theme logo applied live across the website!');
+}
+
+function deleteOrResetCmsLogo() {
+  const defaultUrl = window.PP_LOGO_DATA_URL || '/peoples-plaza-logo.png';
+  window.ppSaveCMS({ logoUrl: defaultUrl, logoVersion: 3 });
+  loadCmsEditor();
+  showAlert('Logo reset to default People\'s Plaza emblem.');
+}
+
+function saveCmsLogoAndBrand() {
+  const logoUrl = document.getElementById('cms-logo-url-input').value.trim() || window.PP_LOGO_DATA_URL || '/peoples-plaza-logo.png';
+  const brandTitle = document.getElementById('cms-brand-title').value.trim() || "People's Plaza";
+  const brandSubtitle = document.getElementById('cms-brand-subtitle').value.trim() || 'Kathmandu';
+  window.ppSaveCMS({ logoUrl, brandTitle, brandSubtitle, logoVersion: 3 });
+  loadCmsEditor();
+  showAlert('Logo & Brand Header saved and updated live across the frontend!');
+}
+
+async function handleNewSlideFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  document.getElementById('new-slide-file-label').textContent = 'Ready';
+  const dataUrl = await compressLocalImage(file, 800, 0.72);
+  document.getElementById('new-slide-url').value = dataUrl;
+}
+
+function addCmsCarouselSlide() {
+  const url = document.getElementById('new-slide-url').value.trim();
+  const tag = document.getElementById('new-slide-tag').value.trim() || 'Featured';
+  const caption = document.getElementById('new-slide-caption').value.trim() || "People's Plaza Highlight";
+  if (!url) {
+    showAlert('Please upload a photo from your device or enter an image URL.', 'error');
+    return;
+  }
+  const cms = window.ppGetCMS();
+  const slides = [...(cms.carouselSlides || [])];
+  slides.push({ id: 'slide-' + Date.now(), url, tag, caption });
+  window.ppSaveCMS({ carouselSlides: slides });
+  document.getElementById('new-slide-url').value = '';
+  document.getElementById('new-slide-tag').value = '';
+  document.getElementById('new-slide-caption').value = '';
+  document.getElementById('new-slide-file-label').textContent = 'Device Photo';
+  loadCmsEditor();
+  showAlert('New carousel photo & caption added live to homepage!');
+}
+
+async function replaceCmsCarouselPhoto(event, slideId) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const dataUrl = await compressLocalImage(file, 800, 0.72);
+  const cms = window.ppGetCMS();
+  const slides = (cms.carouselSlides || []).map(s => s.id === slideId ? { ...s, url: dataUrl } : s);
+  window.ppSaveCMS({ carouselSlides: slides });
+  loadCmsEditor();
+  showAlert('Carousel photo updated live!');
+}
+
+function updateCmsCarouselField(slideId, field, value) {
+  const cms = window.ppGetCMS();
+  const slides = (cms.carouselSlides || []).map(s => s.id === slideId ? { ...s, [field]: value.trim() } : s);
+  window.ppSaveCMS({ carouselSlides: slides });
+  showAlert('Carousel caption updated live!');
+}
+
+function deleteCmsCarouselSlide(slideId) {
+  const cms = window.ppGetCMS();
+  const slides = (cms.carouselSlides || []).filter(s => s.id !== slideId);
+  if (slides.length === 0) {
+    showAlert('At least one carousel photo must remain in the gallery.', 'error');
+    return;
+  }
+  window.ppSaveCMS({ carouselSlides: slides });
+  loadCmsEditor();
+  showAlert('Carousel photo deleted from website.');
+}
+
+function saveCmsAboutText() {
+  const aboutTitle = document.getElementById('cms-about-title-input').value.trim();
+  const aboutDesc1 = document.getElementById('cms-about-desc1-input').value.trim();
+  const aboutDesc2 = document.getElementById('cms-about-desc2-input').value.trim();
+  window.ppSaveCMS({ aboutTitle, aboutDesc1, aboutDesc2 });
+  showAlert('About Us section text updated live!');
+}
+
+async function addCmsAboutPhotoFromDevice(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const dataUrl = await compressLocalImage(file, 750, 0.72);
+  const cms = window.ppGetCMS();
+  const aboutPhotos = [...(cms.aboutPhotos || []), {
+    id: 'about-' + Date.now(),
+    url: dataUrl,
+    caption: file.name.replace(/\.[^/.]+$/, '')
+  }];
+  window.ppSaveCMS({ aboutPhotos });
+  loadCmsEditor();
+  showAlert('New About Us photo added from device and published live!');
+}
+
+async function replaceCmsAboutPhoto(event, photoId) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const dataUrl = await compressLocalImage(file, 750, 0.72);
+  const cms = window.ppGetCMS();
+  const aboutPhotos = (cms.aboutPhotos || []).map(p => p.id === photoId ? { ...p, url: dataUrl } : p);
+  window.ppSaveCMS({ aboutPhotos });
+  loadCmsEditor();
+  showAlert('About Us photo replaced live!');
+}
+
+function updateCmsAboutCaption(photoId, caption) {
+  const cms = window.ppGetCMS();
+  const aboutPhotos = (cms.aboutPhotos || []).map(p => p.id === photoId ? { ...p, caption: caption.trim() } : p);
+  window.ppSaveCMS({ aboutPhotos });
+  showAlert('About Us photo caption updated live!');
+}
+
+function deleteCmsAboutPhoto(photoId) {
+  const cms = window.ppGetCMS();
+  const aboutPhotos = (cms.aboutPhotos || []).filter(p => p.id !== photoId);
+  if (aboutPhotos.length === 0) {
+    showAlert('At least one About Us photo must remain.', 'error');
+    return;
+  }
+  window.ppSaveCMS({ aboutPhotos });
+  loadCmsEditor();
+  showAlert('About Us photo deleted.');
+}
+
+function addCmsPhone() {
+  const label = document.getElementById('new-phone-label').value.trim() || 'Office';
+  const value = document.getElementById('new-phone-val').value.trim();
+  if (!value) return;
+  const cms = window.ppGetCMS();
+  const phones = [...(cms.phones || []), { id: 'ph-' + Date.now(), label, value }];
+  window.ppSaveCMS({ phones });
+  document.getElementById('new-phone-label').value = '';
+  document.getElementById('new-phone-val').value = '';
+  loadCmsEditor();
+  showAlert('Phone number added live to website!');
+}
+
+function updateCmsPhone(id, field, val) {
+  const cms = window.ppGetCMS();
+  const phones = (cms.phones || []).map(p => p.id === id ? { ...p, [field]: val.trim() } : p);
+  window.ppSaveCMS({ phones });
+  showAlert('Phone number updated live!');
+}
+
+function deleteCmsPhone(id) {
+  const cms = window.ppGetCMS();
+  const phones = (cms.phones || []).filter(p => p.id !== id);
+  window.ppSaveCMS({ phones });
+  loadCmsEditor();
+  showAlert('Phone number deleted.');
+}
+
+function addCmsEmail() {
+  const label = document.getElementById('new-email-label').value.trim() || 'Support';
+  const value = document.getElementById('new-email-val').value.trim();
+  if (!value) return;
+  const cms = window.ppGetCMS();
+  const emails = [...(cms.emails || []), { id: 'em-' + Date.now(), label, value }];
+  window.ppSaveCMS({ emails });
+  document.getElementById('new-email-label').value = '';
+  document.getElementById('new-email-val').value = '';
+  loadCmsEditor();
+  showAlert('Email address added live to website!');
+}
+
+function updateCmsEmail(id, field, val) {
+  const cms = window.ppGetCMS();
+  const emails = (cms.emails || []).map(em => em.id === id ? { ...em, [field]: val.trim() } : em);
+  window.ppSaveCMS({ emails });
+  showAlert('Email address updated live!');
+}
+
+function deleteCmsEmail(id) {
+  const cms = window.ppGetCMS();
+  const emails = (cms.emails || []).filter(em => em.id !== id);
+  window.ppSaveCMS({ emails });
+  loadCmsEditor();
+  showAlert('Email address deleted.');
+}
+
+function saveCmsHours() {
+  const businessHours = document.getElementById('cms-hours-input').value.trim();
+  window.ppSaveCMS({ businessHours });
+  showAlert('Business hours updated live!');
+}
+
+function addCmsSocial() {
+  const rawPlatform = document.getElementById('new-social-platform').value;
+  const [platform, icon] = rawPlatform.split('|');
+  const url = document.getElementById('new-social-url').value.trim();
+  if (!url) return;
+  const cms = window.ppGetCMS();
+  const socialLinks = [...(cms.socialLinks || []), { id: 'soc-' + Date.now(), platform, icon, url }];
+  window.ppSaveCMS({ socialLinks });
+  document.getElementById('new-social-url').value = '';
+  loadCmsEditor();
+  showAlert(`${platform} link added live to website!`);
+}
+
+function updateCmsSocial(id, field, val) {
+  const cms = window.ppGetCMS();
+  const socialLinks = (cms.socialLinks || []).map(s => s.id === id ? { ...s, [field]: val.trim() } : s);
+  window.ppSaveCMS({ socialLinks });
+  showAlert('Social media link updated live!');
+}
+
+function deleteCmsSocial(id) {
+  const cms = window.ppGetCMS();
+  const socialLinks = (cms.socialLinks || []).filter(s => s.id !== id);
+  window.ppSaveCMS({ socialLinks });
+  loadCmsEditor();
+  showAlert('Social media link deleted.');
+}
+
+// ==========================================
+// CORE ADMIN DATA & TWO-WAY STORE SYNC
+// ==========================================
+let isLoadingAdmin = false;
+async function loadAdminData() {
+  if (isLoadingAdmin) return;
+  isLoadingAdmin = true;
+  try {
+    loadCmsEditor();
+    const merged = await window.ppGetMergedData();
+    allStores = merged.allStores || [];
+    allRegistrations = merged.allRegistrations || [];
+    allInquiries = merged.allInquiries || [];
+
+    renderStores(allStores);
+    renderRegistrations(allRegistrations);
+    renderInquiries(allInquiries);
+
+    document.getElementById('stores-tab-badge').textContent = allStores.length;
+    document.getElementById('reg-badge').textContent = allRegistrations.length;
+    document.getElementById('msg-badge').textContent = allInquiries.length;
+  } finally {
+    isLoadingAdmin = false;
+  }
+}
+
+function renderStores(stores) {
+  const tbody = document.getElementById('admin-stores-tbody');
+  const t = window.ppT ? window.ppT : (k, f) => f || k;
+  document.getElementById('store-count-label').textContent = `${stores.length} ${t('stat_retail', 'store records')}`;
+  if (stores.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">${t('no_stores_found', 'No stores found.')}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = stores.map(s => {
+    const tStore = window.ppTranslateStore ? window.ppTranslateStore(s) : s;
+    const statusLive = t('admin.status_live', 'Live on Site');
+    const statusHidden = t('admin.status_hidden', 'Hidden');
+    const btnEdit = t('common.edit', 'Edit');
+    const btnHide = t('admin.btn_hide', 'Hide');
+    const btnUnhide = t('admin.btn_unhide', 'Unhide');
+    const btnDelete = t('common.delete', 'Delete');
+    return `
+    <tr class="hover:bg-slate-950/50 transition">
+      <td class="py-3 px-4 font-bold text-white flex items-center gap-2.5 max-w-[260px]">
+        <img src="${s.image_url || s.img || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=100'}" class="w-9 h-9 rounded-xl object-cover border border-slate-800 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=100'">
+        <div class="truncate">
+          <div class="text-xs font-extrabold text-white truncate">${tStore.name || 'Store'}</div>
+          <div class="text-[10px] font-normal text-slate-400 truncate max-w-[190px]">${tStore.desc || tStore.description || 'No description'}</div>
+        </div>
+      </td>
+      <td class="py-3 px-3 text-slate-300 font-medium whitespace-nowrap">${tStore.floor || 'Ground Floor'} <span class="text-pink-400 font-bold text-[11px]">(${s.unit || 'PP-101'})</span></td>
+      <td class="py-3 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-800 text-pink-300 font-bold text-[10px] uppercase">${tStore.category || 'Fashion'}</span></td>
+      <td class="py-3 px-3 text-slate-300 font-medium whitespace-nowrap">${s.username || (s.registered_email ? s.registered_email.split('@')[0] : 'shopkeeper')}</td>
+      <td class="py-3 px-3 text-slate-300 max-w-[180px] truncate" title="${s.registered_email || s.email || ''}">${s.registered_email || s.email || '<span class="text-slate-500 text-[11px]">None assigned</span>'}</td>
+      <td class="py-3 px-3 whitespace-nowrap">
+        ${s.is_hidden ? `<span class="rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 text-[10px] text-amber-400 font-bold">${statusHidden}</span>` : `<span class="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] text-emerald-400 font-bold">${statusLive}</span>`}
+      </td>
+      <td class="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+        <button onclick="editStore('${s.id}')" class="rounded-lg bg-slate-800 px-2.5 py-1 text-xs font-semibold hover:bg-slate-700 transition">${btnEdit}</button>
+        <button onclick="toggleStoreVisibility('${s.id}')" class="rounded-lg ${s.is_hidden ? 'bg-emerald-600/20 text-emerald-300' : 'bg-amber-600/20 text-amber-300'} px-2 py-1 text-xs font-semibold hover:opacity-80 transition">${s.is_hidden ? btnUnhide : btnHide}</button>
+        <button onclick="deleteStore('${s.id}', '${(s.name || '').replace(/'/g, "\\'")}')" class="rounded-lg bg-red-600/20 border border-red-600/30 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-600 hover:text-white transition">${btnDelete}</button>
+      </td>
+    </tr>
+  `;
+  }).join('');
+}
+
+function filterStores() {
+  const query = document.getElementById('store-search').value.toLowerCase();
+  const filtered = allStores.filter(s => {
+    const tStore = window.ppTranslateStore ? window.ppTranslateStore(s) : s;
+    return (s.name || '').toLowerCase().includes(query) ||
+      (tStore.name || '').toLowerCase().includes(query) ||
+      (s.category || '').toLowerCase().includes(query) ||
+      (tStore.category || '').toLowerCase().includes(query) ||
+      (s.floor || '').toLowerCase().includes(query) ||
+      (tStore.floor || '').toLowerCase().includes(query) ||
+      (s.unit || '').toLowerCase().includes(query) ||
+      (s.registered_email || s.email || '').toLowerCase().includes(query);
+  });
+  renderStores(filtered);
+}
+
+function renderRegistrations(regs) {
+  const tbody = document.getElementById('registrations-tbody');
+  const t = window.ppT ? window.ppT : (k, f) => f || k;
+  if (regs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">No shopkeeper applications received yet.</td></tr>`;
+    return;
+  }
+  const statusApproved = t('admin.status_approved', 'Approved & Live');
+  const statusPending = t('admin.status_pending', 'Pending Review');
+  const btnApprove = t('admin.btn_approve', 'Approve');
+  const btnResync = t('admin.btn_resync', 'Re-Sync');
+  const btnViewEdit = t('admin.btn_view_edit', 'View / Edit');
+  const btnDelete = t('common.delete', 'Delete');
+  tbody.innerHTML = regs.map(r => {
+    const tStore = window.ppTranslateStore ? window.ppTranslateStore(r) : r;
+    return `
+    <tr class="hover:bg-slate-950/50 transition">
+      <td class="py-3 px-4 font-bold text-white flex items-center gap-2.5 max-w-[240px]">
+        <img src="${r.image_url || r.img || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=100'}" class="w-9 h-9 rounded-xl object-cover border border-slate-800 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=100'">
+        <div class="truncate">
+          <div class="text-xs font-extrabold text-white truncate">${tStore.name || r.shop_name || r.name}</div>
+          <div class="text-[10px] font-normal text-slate-400 truncate max-w-[170px]">${tStore.desc || r.description || r.desc || ''}</div>
+        </div>
+      </td>
+      <td class="py-3 px-3 text-slate-300 font-medium whitespace-nowrap">${r.owner_name || r.username || 'Shopkeeper'}<br><span class="text-[10px] text-pink-400 font-normal">@${r.username || (r.email ? r.email.split('@')[0] : 'vendor')}</span></td>
+      <td class="py-3 px-3 text-slate-300 text-xs whitespace-nowrap"><span class="px-2 py-0.5 rounded-md bg-slate-800 text-pink-300 font-bold text-[10px] uppercase">${tStore.category || 'Fashion'}</span> · ${tStore.floor || 'Ground Floor'} (${r.unit || 'PP-101'})</td>
+      <td class="py-3 px-3 text-slate-300 text-xs whitespace-nowrap">${r.email}<br><span class="text-slate-400 text-[11px]">${r.phone || ''}</span></td>
+      <td class="py-3 px-3 whitespace-nowrap">
+        ${r.is_approved ? `<span class="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] text-emerald-400 font-bold flex-inline items-center gap-1"><i class="fa-solid fa-check mr-1"></i>${statusApproved}</span>` : `<span class="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-[10px] text-amber-400 font-bold flex-inline items-center gap-1"><i class="fa-solid fa-clock mr-1"></i>${statusPending}</span>`}
+      </td>
+      <td class="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+        <button onclick="approveAndPublishStore('${r.id}')" class="rounded-lg ${r.is_approved ? 'bg-slate-800 border border-slate-700 text-emerald-300 hover:bg-slate-700' : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-md'} px-2.5 py-1 text-xs font-bold transition">
+          <i class="fa-solid ${r.is_approved ? 'fa-arrows-rotate' : 'fa-check'} mr-1"></i>${r.is_approved ? btnResync : btnApprove}
+        </button>
+        <button onclick="openRegModal('${r.id}')" class="rounded-lg bg-slate-800 px-2.5 py-1 text-xs font-semibold hover:bg-slate-700 transition">${btnViewEdit}</button>
+        <button onclick="deleteRegistration('${r.id}')" class="rounded-lg bg-red-600/20 border border-red-600/30 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-600 hover:text-white transition">${btnDelete}</button>
+      </td>
+    </tr>
+  `;
+  }).join('');
+}
+
+function renderInquiries(msgs) {
+  const tbody = document.getElementById('inquiries-tbody');
+  const t = window.ppT ? window.ppT : (k, f) => f || k;
+  const btnViewEdit = t('admin.btn_view_edit', 'View / Edit');
+  const btnDelete = t('common.delete', 'Delete');
+  if (msgs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">No customer messages received.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = msgs.map(m => `
+    <tr class="hover:bg-slate-950/50 transition">
+      <td class="py-3 px-4 text-slate-400 text-xs whitespace-nowrap">${m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Recent'}</td>
+      <td class="py-3 px-3 font-bold text-white whitespace-nowrap">${m.name}<div class="text-[10px] font-normal text-slate-400">${m.email} · ${m.phone || ''}</div></td>
+      <td class="py-3 px-3 text-slate-300 text-xs max-w-sm truncate" title="${(m.message || '').replace(/"/g, '&quot;')}">${m.message}</td>
+      <td class="py-3 px-3 whitespace-nowrap">${m.photo_url ? `<img src="${m.photo_url}" alt="Attachment" class="w-8 h-8 rounded-lg object-cover border border-pink-500/40 cursor-pointer hover:scale-105 transition" onclick="openInquiryModal('${m.id}')">` : '<span class="text-xs text-slate-500">None</span>'}</td>
+      <td class="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
+        <button onclick="openInquiryModal('${m.id}')" class="rounded-lg bg-slate-800 px-2.5 py-1 text-xs font-semibold hover:bg-slate-700 transition">${btnViewEdit}</button>
+        <button onclick="deleteInquiry('${m.id}')" class="rounded-lg bg-red-600/20 border border-red-600/30 px-2 py-1 text-xs font-semibold text-red-300 hover:bg-red-600 hover:text-white transition">${btnDelete}</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function sanitizeExcelCell(val) {
+  const str = String(val === undefined || val === null ? '' : val);
+  if (str.startsWith('data:image/')) {
+    return '[Uploaded Device Photo]';
+  }
+  return str.length > 32000 ? (str.slice(0, 32000) + '...') : str;
+}
+
+function downloadShopDetailsExcel() {
+  try {
+    const localUsers = JSON.parse(localStorage.getItem('peoples_plaza_users_v26') || '[]');
+    const credsMap = new Map();
+    localUsers.forEach(u => {
+      if (u.email && u.password) credsMap.set(u.email.toLowerCase(), u.password);
+      if (u.username && u.password) credsMap.set(u.username.toLowerCase(), u.password);
+    });
+
+    const rows = allStores.map((s, index) => {
+      const email = (s.registered_email || s.email || '').toLowerCase();
+      const username = s.username || (email ? email.split('@')[0] : 'shopkeeper');
+      const password = s.password || credsMap.get(email) || credsMap.get(username.toLowerCase()) || 'Registered / Encrypted in Auth';
+      const rawPhoto = s.image_url || s.img || '';
+
+      return {
+        'S.N.': index + 1,
+        'Shop ID': sanitizeExcelCell(s.id || `PP-${index + 101}`),
+        'Shop Name': sanitizeExcelCell(s.name || 'Store'),
+        'Category': sanitizeExcelCell(s.category || 'Fashion'),
+        'Floor Level': sanitizeExcelCell(s.floor || 'Ground Floor'),
+        'Unit / Stall No': sanitizeExcelCell(s.unit || 'PP-101'),
+        'Owner / Manager': sanitizeExcelCell(s.owner_name || username),
+        'Login Username': sanitizeExcelCell(username),
+        'Login Password': sanitizeExcelCell(password),
+        'Registered Email': sanitizeExcelCell(s.registered_email || s.email || 'None assigned'),
+        'Contact Phone': sanitizeExcelCell(s.phone || '+977 01-4245000'),
+        'Operating Hours': sanitizeExcelCell(s.hours || '10:00 AM - 8:00 PM'),
+        'Directory Status': s.is_hidden ? 'Hidden' : 'Live on Site',
+        'Description': sanitizeExcelCell(s.description || s.desc || ''),
+        'Photo URL': sanitizeExcelCell(rawPhoto)
+      };
+    });
+
+    if (rows.length === 0) {
+      showAlert('No store records available to export.', 'error');
+      return;
+    }
+
+    if (window.XLSX && typeof window.XLSX.utils !== 'undefined') {
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      worksheet['!cols'] = [
+        { wch: 6 }, { wch: 14 }, { wch: 28 }, { wch: 15 }, { wch: 16 },
+        { wch: 16 }, { wch: 22 }, { wch: 20 }, { wch: 24 }, { wch: 30 },
+        { wch: 18 }, { wch: 20 }, { wch: 16 }, { wch: 40 }, { wch: 45 }
+      ];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Peoples_Plaza_Shops");
+      const dateStr = new Date().toISOString().split('T')[0];
+      const fileName = `Peoples_Plaza_Shop_Details_and_Logins_${dateStr}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+      showAlert(`Downloaded Excel file: ${fileName} successfully!`);
+    }
+  } catch (err) {
+    showAlert('Export error: ' + err.message, 'error');
+  }
+}
+
+async function handleStoreModalPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const dataUrl = await compressLocalImage(file, 650, 0.7);
+  document.getElementById('store-image').value = dataUrl;
+}
+
+function openStoreModal(store = null) {
+  const addEditTitle = window.ppT ? window.ppT('admin.modal_add_edit', 'Add / Edit Store') : 'Add / Edit Store';
+  document.getElementById('store-modal-title').textContent = addEditTitle;
+  document.getElementById('edit-store-id').value = store ? store.id : '';
+  document.getElementById('store-name').value = store ? (store.name_en || store.name || '') : '';
+  const nameNeEl = document.getElementById('store-name-ne');
+  if (nameNeEl) nameNeEl.value = store ? (store.name_ne || '') : '';
+  document.getElementById('store-floor').value = store ? store.floor : 'Ground Floor';
+  document.getElementById('store-category').value = store ? store.category : 'Fashion';
+  document.getElementById('store-unit').value = store ? (store.unit || 'PP-101') : 'PP-101';
+  document.getElementById('store-phone').value = store ? (store.phone || '+977 01-4245000') : '+977 01-4245000';
+  document.getElementById('store-reg-email').value = store ? (store.registered_email || store.email || '') : '';
+  document.getElementById('store-username').value = store ? (store.username || '') : '';
+  document.getElementById('store-password').value = store ? (store.password || '') : '';
+  document.getElementById('store-image').value = store ? (store.image_url || store.img || '') : '';
+  document.getElementById('store-desc').value = store ? (store.description_en || store.description || store.desc || '') : '';
+  const descNeEl = document.getElementById('store-desc-ne');
+  if (descNeEl) descNeEl.value = store ? (store.description_ne || '') : '';
+  document.getElementById('store-is-hidden').checked = store ? !!store.is_hidden : false;
+  document.getElementById('store-modal').classList.remove('hidden');
+}
+
+function closeStoreModal() { 
+  document.getElementById('store-modal').classList.add('hidden'); 
+}
+
+function editStore(id) { 
+  const store = allStores.find(s => String(s.id) === String(id)); 
+  if (store) openStoreModal(store); 
+}
+
+async function toggleStoreVisibility(id) {
+  const store = allStores.find(s => String(s.id) === String(id));
+  if (!store) return;
+  const newHiddenState = !store.is_hidden;
+  await window.ppSaveUnifiedStore({ ...store, is_hidden: newHiddenState }, { addToRegistrations: true });
+  showAlert(`Store "${store.name}" is now ${newHiddenState ? 'hidden from' : 'visible on'} the live directory.`);
+  await loadAdminData();
+}
+
+async function saveStore(event) {
+  event.preventDefault();
+  const submitBtn = document.getElementById('save-store-submit-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving & Syncing...';
+
+  try {
+    const id = document.getElementById('edit-store-id').value;
+    const existing = allStores.find(s => String(s.id) === String(id)) || {};
+    const nameVal = document.getElementById('store-name').value.trim();
+    const nameNeVal = (document.getElementById('store-name-ne') ? document.getElementById('store-name-ne').value.trim() : '') || existing.name_ne || '';
+    const descVal = document.getElementById('store-desc').value.trim() || existing.desc || "Welcome to our outlet at People's Plaza!";
+    const descNeVal = (document.getElementById('store-desc-ne') ? document.getElementById('store-desc-ne').value.trim() : '') || existing.description_ne || '';
+    const usernameVal = document.getElementById('store-username').value.trim().toLowerCase() || existing.username || nameVal.toLowerCase().replace(/[^a-z0-9]/g, '') || 'shopkeeper';
+    const emailVal = document.getElementById('store-reg-email').value.trim().toLowerCase() || existing.email || existing.registered_email || `${usernameVal}@peoplesplaza.com.np`;
+    const passVal = document.getElementById('store-password').value.trim() || existing.password || 'password123';
+    const imgVal = document.getElementById('store-image').value.trim() || existing.img || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=600&q=80';
+
+    const storeData = {
+      ...existing,
+      id: id || ('store-' + Date.now()),
+      name: nameVal,
+      name_en: nameVal,
+      name_ne: nameNeVal,
+      shop_name: nameVal,
+      floor: document.getElementById('store-floor').value,
+      category: document.getElementById('store-category').value,
+      unit: document.getElementById('store-unit').value.trim() || 'PP-101',
+      phone: document.getElementById('store-phone').value.trim() || '+977 01-4245000',
+      email: emailVal,
+      registered_email: emailVal,
+      username: usernameVal,
+      password: passVal,
+      img: imgVal,
+      image_url: imgVal,
+      desc: descVal,
+      description: descVal,
+      description_en: descVal,
+      description_ne: descNeVal,
+      is_hidden: document.getElementById('store-is-hidden').checked,
+      is_approved: true,
+      status: 'Approved & Live'
+    };
+
+    await window.ppSaveUnifiedStore(storeData, { addToRegistrations: true });
+    closeStoreModal();
+    await loadAdminData();
+    showAlert(`Store "${storeData.name}" committed to Supabase and synced live to Shopkeeper Portal & Homepage!`);
+  } catch (err) {
+    showAlert('Error saving store: ' + (err.message || 'Please try again.'), 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = window.ppT ? window.ppT('admin.modal_save_sync', 'Save & Sync to Shopkeeper Portal') : 'Save & Sync to Shopkeeper Portal';
+  }
+}
+
+async function deleteStore(id, name) {
+  if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+  const target = allStores.find(s => String(s.id) === String(id));
+  const emailNorm = target ? String(target.email || target.registered_email || '').trim().toLowerCase() : '';
+
+  const deletedIds = JSON.parse(localStorage.getItem('peoples_plaza_deleted_ids_v26') || '[]');
+  if (!deletedIds.includes(String(id))) deletedIds.push(String(id));
+  window.ppSafeSetLocal('peoples_plaza_deleted_ids_v26', JSON.stringify(deletedIds));
+
+  if (emailNorm) {
+    const deletedRegEmails = JSON.parse(localStorage.getItem('peoples_plaza_deleted_reg_emails_v26') || '[]');
+    if (!deletedRegEmails.includes(emailNorm)) deletedRegEmails.push(emailNorm);
+    window.ppSafeSetLocal('peoples_plaza_deleted_reg_emails_v26', JSON.stringify(deletedRegEmails));
+  }
+
+  let localCustom = JSON.parse(localStorage.getItem('peoples_plaza_stores_v26_custom') || '[]');
+  localCustom = localCustom.filter(s => String(s.id) !== String(id) && (!emailNorm || String(s.email || '').toLowerCase() !== emailNorm));
+  window.ppSafeSetLocal('peoples_plaza_stores_v26_custom', JSON.stringify(localCustom));
+
+  if (window.ppPushSupabaseSystemSync) {
+    await window.ppPushSupabaseSystemSync((state) => {
+      if (!state.deletedStoreIds.includes(String(id))) state.deletedStoreIds.push(String(id));
+      if (emailNorm && !state.deletedRegEmails.includes(emailNorm)) state.deletedRegEmails.push(emailNorm);
+      if (emailNorm && state.storeOverrides) delete state.storeOverrides[emailNorm];
+      return state;
+    });
+  }
+
+  if (window.ppNotifySync) window.ppNotifySync('store_deleted', { id, email: emailNorm });
+  showAlert(`Store "${name}" deleted.`);
+  await loadAdminData();
+}
+
+async function approveAndPublishStore(registrationId) {
+  const reg = allRegistrations.find(r => String(r.id) === String(registrationId));
+  if (!reg) {
+    showAlert('Registration record not found.', 'error');
+    return;
+  }
+
+  const approvedList = JSON.parse(localStorage.getItem('peoples_plaza_approved_reg_ids_v26') || '[]');
+  if (!approvedList.includes(String(reg.id))) approvedList.push(String(reg.id));
+  if (reg.email && !approvedList.includes(reg.email.toLowerCase())) approvedList.push(reg.email.toLowerCase());
+  window.ppSafeSetLocal('peoples_plaza_approved_reg_ids_v26', JSON.stringify(approvedList));
+
+  await window.ppSaveUnifiedStore({
+    ...reg,
+    is_approved: true,
+    status: 'Approved & Live',
+    is_hidden: false
+  }, { addToRegistrations: true });
+
+  showAlert(`"${reg.shop_name || reg.name}" approved and synced live across Shopkeeper Portal & Homepage!`);
+  await loadAdminData();
+}
+
+function approveFromModal() {
+  const id = document.getElementById('edit-reg-id').value;
+  if (id) {
+    closeRegModal();
+    approveAndPublishStore(id);
+  }
+}
+
+function openRegModal(id) {
+  const reg = allRegistrations.find(r => String(r.id) === String(id));
+  if (!reg) return;
+  document.getElementById('edit-reg-id').value = reg.id;
+  document.getElementById('reg-shopname').value = reg.shop_name || reg.name || '';
+  document.getElementById('reg-owner').value = reg.owner_name || reg.username || '';
+  document.getElementById('reg-category').value = reg.category || 'Fashion';
+  document.getElementById('reg-floor').value = reg.floor || 'Ground Floor';
+  document.getElementById('reg-unit').value = reg.unit || 'PP-101';
+  document.getElementById('reg-phone').value = reg.phone || '';
+  document.getElementById('reg-email').value = reg.email || '';
+  document.getElementById('reg-desc').value = reg.description || reg.desc || '';
+  document.getElementById('reg-modal').classList.remove('hidden');
+}
+
+function closeRegModal() { 
+  document.getElementById('reg-modal').classList.add('hidden'); 
+}
+
+async function saveRegistration(event) {
+  event.preventDefault();
+  const submitBtn = document.getElementById('save-reg-submit-btn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving & Syncing...';
+
+  try {
+    const id = document.getElementById('edit-reg-id').value;
+    const existing = allRegistrations.find(r => String(r.id) === String(id)) || {};
+
+    const regData = {
+      ...existing,
+      id: id,
+      name: document.getElementById('reg-shopname').value.trim(),
+      shop_name: document.getElementById('reg-shopname').value.trim(),
+      owner_name: document.getElementById('reg-owner').value.trim(),
+      username: document.getElementById('reg-owner').value.trim().toLowerCase(),
+      category: document.getElementById('reg-category').value,
+      floor: document.getElementById('reg-floor').value.trim(),
+      unit: document.getElementById('reg-unit').value.trim(),
+      phone: document.getElementById('reg-phone').value.trim(),
+      email: document.getElementById('reg-email').value.trim().toLowerCase(),
+      registered_email: document.getElementById('reg-email').value.trim().toLowerCase(),
+      desc: document.getElementById('reg-desc').value.trim(),
+      description: document.getElementById('reg-desc').value.trim()
+    };
+
+    await window.ppSaveUnifiedStore(regData, { addToRegistrations: true });
+    closeRegModal();
+    await loadAdminData();
+    showAlert('Registration updated in Supabase and synced live to Shopkeeper Portal & Directory!');
+  } catch (err) {
+    showAlert('Error saving registration: ' + (err.message || 'Try again.'), 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Save & Sync to Shopkeeper';
+  }
+}
+
+async function deleteRegistration(id) {
+  const reg = allRegistrations.find(r => String(r.id) === String(id));
+  const shopName = reg ? (reg.shop_name || reg.name) : 'this application';
+  if (!confirm(`Are you sure you want to delete registration for "${shopName}"?`)) return;
+
+  const emailNorm = reg && reg.email ? reg.email.toLowerCase() : '';
+  const deletedRegIds = JSON.parse(localStorage.getItem('peoples_plaza_deleted_reg_ids_v26') || '[]');
+  if (!deletedRegIds.includes(String(id))) deletedRegIds.push(String(id));
+  window.ppSafeSetLocal('peoples_plaza_deleted_reg_ids_v26', JSON.stringify(deletedRegIds));
+
+  if (emailNorm) {
+    const deletedRegEmails = JSON.parse(localStorage.getItem('peoples_plaza_deleted_reg_emails_v26') || '[]');
+    if (!deletedRegEmails.includes(emailNorm)) deletedRegEmails.push(emailNorm);
+    window.ppSafeSetLocal('peoples_plaza_deleted_reg_emails_v26', JSON.stringify(deletedRegEmails));
+  }
+
+  let localRegs = JSON.parse(localStorage.getItem('peoples_plaza_registrations_v26') || '[]');
+  localRegs = localRegs.filter(r => String(r.id) !== String(id) && (emailNorm ? String(r.email || '').toLowerCase() !== emailNorm : true));
+  window.ppSafeSetLocal('peoples_plaza_registrations_v26', JSON.stringify(localRegs));
+
+  if (window.ppPushSupabaseSystemSync) {
+    await window.ppPushSupabaseSystemSync((state) => {
+      if (!state.deletedRegIds.includes(String(id))) state.deletedRegIds.push(String(id));
+      if (emailNorm && !state.deletedRegEmails.includes(emailNorm)) state.deletedRegEmails.push(emailNorm);
+      if (emailNorm && state.storeOverrides) delete state.storeOverrides[emailNorm];
+      return state;
+    });
+  }
+
+  showAlert(`Registration for "${shopName}" permanently deleted.`);
+  if (window.ppNotifySync) window.ppNotifySync('registration_deleted');
+  await loadAdminData();
+}
+
+function openInquiryModal(id) {
+  const inquiry = allInquiries.find(m => String(m.id) === String(id));
+  if (!inquiry) return;
+  document.getElementById('edit-inquiry-id').value = inquiry.id;
+  document.getElementById('inquiry-name').value = inquiry.name || '';
+  document.getElementById('inquiry-email').value = inquiry.email || '';
+  document.getElementById('inquiry-phone').value = inquiry.phone || '';
+  document.getElementById('inquiry-message').value = inquiry.message || '';
+  const photoSection = document.getElementById('inquiry-photo-section');
+  const photoImg = document.getElementById('inquiry-photo-img');
+  if (inquiry.photo_url) {
+    photoImg.src = inquiry.photo_url;
+    photoSection.classList.remove('hidden');
+  } else {
+    photoSection.classList.add('hidden');
+  }
+  document.getElementById('inquiry-modal').classList.remove('hidden');
+}
+
+function closeInquiryModal() { 
+  document.getElementById('inquiry-modal').classList.add('hidden'); 
+}
+
+async function saveInquiry(event) {
+  event.preventDefault();
+  const id = document.getElementById('edit-inquiry-id').value;
+  const existing = allInquiries.find(m => String(m.id) === String(id)) || {};
+  const inquiryData = {
+    ...existing,
+    id,
+    name: document.getElementById('inquiry-name').value.trim(),
+    email: document.getElementById('inquiry-email').value.trim(),
+    phone: document.getElementById('inquiry-phone').value.trim(),
+    message: document.getElementById('inquiry-message').value.trim()
+  };
+
+  let localInq = JSON.parse(localStorage.getItem('peoples_plaza_inquiries_v26') || '[]');
+  const existsLocal = localInq.some(m => String(m.id) === String(id));
+  if (existsLocal) {
+    localInq = localInq.map(m => String(m.id) === String(id) ? { ...m, ...inquiryData } : m);
+  } else {
+    localInq.unshift(inquiryData);
+  }
+  window.ppSafeSetLocal('peoples_plaza_inquiries_v26', JSON.stringify(localInq));
+
+  if (window.ppPushSupabaseSystemSync) {
+    await window.ppPushSupabaseSystemSync((state) => {
+      state.inquiries = (state.inquiries || []).map(m => String(m.id) === String(id) ? { ...m, ...inquiryData } : m);
+      return state;
+    });
+  }
+
+  showAlert('Customer message updated successfully!');
+  closeInquiryModal();
+  await loadAdminData();
+}
+
+async function deleteInquiry(id) {
+  if (!confirm('Are you sure you want to delete this customer message?')) return;
+  let localInq = JSON.parse(localStorage.getItem('peoples_plaza_inquiries_v26') || '[]');
+  localInq = localInq.filter(m => String(m.id) !== String(id));
+  window.ppSafeSetLocal('peoples_plaza_inquiries_v26', JSON.stringify(localInq));
+
+  const delInqs = JSON.parse(localStorage.getItem('peoples_plaza_deleted_inq_ids_v26') || '[]');
+  if (!delInqs.includes(String(id))) delInqs.push(String(id));
+  window.ppSafeSetLocal('peoples_plaza_deleted_inq_ids_v26', JSON.stringify(delInqs));
+
+  if (window.ppPushSupabaseSystemSync) {
+    await window.ppPushSupabaseSystemSync((state) => {
+      state.inquiries = (state.inquiries || []).filter(m => String(m.id) !== String(id));
+      state.deletedInquiryIds = state.deletedInquiryIds || [];
+      if (!state.deletedInquiryIds.includes(String(id))) state.deletedInquiryIds.push(String(id));
+      return state;
+    });
+  }
+
+  showAlert('Customer message deleted.');
+  await loadAdminData();
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadAdminData();
+  if (window.ppOnSync) {
+    window.ppOnSync(() => loadAdminData());
+  }
+  if (window.ppOnLanguageChange) {
+    window.ppOnLanguageChange(() => {
+      renderStores(allStores);
+      renderRegistrations(allRegistrations);
+      renderInquiries(allInquiries);
+    });
+  }
+});
+</script>
+</body>
+</html>

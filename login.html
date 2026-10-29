@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People's Plaza | Shopkeeper Login & Registration</title>
+<link rel="icon" type="image/png" href="/peoples-plaza-logo.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+  body { font-family: Inter, system-ui, sans-serif; }
+</style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
+
+<!-- Fixed Portal Style Header -->
+<header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
+  <div class="max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="flex items-center shrink-0" aria-label="People's Plaza Home">
+        <img id="portal-brand-logo" src="/peoples-plaza-logo.png" alt="People's Plaza Logo" class="h-10 w-auto object-contain shrink-0" onerror="this.onerror=null;this.src=window.PP_LOGO_DATA_URL||'peoples-plaza-logo.png'">
+      </a>
+      <div>
+        <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white flex flex-wrap items-center gap-2">
+          <span class="px-2.5 py-0.5 rounded-full bg-pink-600/20 text-pink-400 text-[10px] font-extrabold uppercase tracking-widest" data-i18n="login.vendor_access">Vendor Access</span>
+        </h1>
+        <p class="text-[11px] text-pink-400 font-medium flex items-center gap-1.5 mt-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span data-i18n="login.sync_active">Live Two-Way Sync Active</span>
+        </p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2.5">
+      <div class="pp-lang-switcher" role="group" aria-label="Language selector">
+        <button type="button" onclick="window.ppSetLanguage('en')" data-lang-switch="en" class="pp-lang-btn active">EN</button>
+        <button type="button" onclick="window.ppSetLanguage('ne')" data-lang-switch="ne" class="pp-lang-btn">नेपाली</button>
+      </div>
+      <a href="index.html" class="rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-semibold hover:bg-slate-700 transition" data-i18n="login.view_live_site">View Live Site ↗</a>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow w-full flex items-center justify-center">
+  <div class="w-full space-y-3">
+    <div id="portal-alert" role="status" aria-live="polite" class="hidden rounded-xl p-3 text-xs font-bold shadow-lg"></div>
+
+    <section class="rounded-3xl border border-fuchsia-900 bg-slate-900 p-5 sm:p-8 shadow-2xl space-y-4">
+      <div class="text-center space-y-1.5">
+        <img id="portal-login-logo" src="/peoples-plaza-logo.png" alt="People's Plaza Logo" class="mx-auto h-12 w-auto object-contain" onerror="this.onerror=null;this.src=window.PP_LOGO_DATA_URL||'peoples-plaza-logo.png'">
+        <h2 class="text-xl font-extrabold text-white" data-i18n="login.portal_access_title">Vendor Portal Access</h2>
+        <p class="text-pink-300 text-xs font-medium" data-i18n="login.portal_access_sub">Manage your store and live two-way synchronization</p>
+      </div>
+
+      <div class="max-w-md mx-auto flex rounded-xl bg-slate-950 p-1 border border-slate-800">
+        <button onclick="switchPortalTab('login')" id="tab-login-btn" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition bg-pink-600 text-white shadow" data-i18n="login.tab_login">Shopkeeper Login</button>
+        <button onclick="switchPortalTab('signup')" id="tab-signup-btn" class="flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition text-slate-400 hover:text-white" data-i18n="login.tab_register">Register Shop</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <form id="login-form" class="max-w-md mx-auto space-y-3.5" onsubmit="event.preventDefault(); handleLogin();">
+        <div>
+          <label for="login-identifier" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.identifier_label">Username, Email or Unit *</label>
+          <input type="text" id="login-identifier" required placeholder="e.g. zarafashion, zara@peoplesplaza.com.np, or PP-101" data-i18n-placeholder="login.identifier_placeholder" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs focus:border-pink-500 focus:outline-none">
+        </div>
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label for="login-password" class="block text-xs font-bold text-slate-300 uppercase tracking-wider" data-i18n="login.password_label">Password *</label>
+            <a href="forgot-password.html" class="text-xs text-pink-400 hover:underline font-semibold" data-i18n="login.forgot_password">Forgot Password?</a>
+          </div>
+          <div class="relative">
+            <input type="password" id="login-password" required placeholder="••••••••" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-white text-xs focus:border-pink-500 focus:outline-none pr-10">
+            <button type="button" onclick="togglePasswordVisibility('login-password', 'login-eye')" aria-label="Toggle password visibility" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">
+              <i id="login-eye" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" id="login-submit-btn" class="w-full rounded-xl bg-pink-600 p-3 font-bold text-xs hover:bg-pink-500 transition shadow-lg shadow-pink-600/20 uppercase tracking-wider text-white" data-i18n="login.btn_login">
+          Login to Shop Dashboard
+        </button>
+      </form>
+
+      <!-- REGISTER FORM -->
+      <form id="signup-form" class="space-y-3 hidden" onsubmit="event.preventDefault(); handleSignup();">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label for="reg-shopname" class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_shopname">Shop Name *</label>
+            <input type="text" id="reg-shopname" required placeholder="Himalayan Apparel" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-xs text-white">
+          </div>
+          <div>
+            <label for="reg-username" class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_username">Username (ID) *</label>
+            <input type="text" id="reg-username" required placeholder="himalayan" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-xs text-white">
+          </div>
+          <div>
+            <label for="reg-category" class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_category">Category *</label>
+            <select id="reg-category" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-xs text-white">
+              <option value="Fashion" data-i18n="cat_fashion">Fashion</option>
+              <option value="Footwear" data-i18n="cat_footwear">Footwear</option>
+              <option value="Cosmetics" data-i18n="cat_cosmetics">Cosmetics</option>
+              <option value="Electronics" data-i18n="cat_electronics">Electronics</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+          <div>
+            <label for="reg-floor" class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_floor">Floor *</label>
+            <select id="reg-floor" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-xs text-white">
+              <option value="Ground Floor" data-i18n="floor.ground">Ground Floor</option>
+              <option value="1st Floor" data-i18n="floor.1st">1st Floor</option>
+              <option value="2nd Floor" data-i18n="floor.2nd">2nd Floor</option>
+              <option value="3rd Floor" data-i18n="floor.3rd">3rd Floor</option>
+              <option value="4th Floor" data-i18n="floor.4th">4th Floor</option>
+              <option value="5th Floor" data-i18n="floor.5th">5th Floor</option>
+            </select>
+          </div>
+          <div>
+            <label for="reg-unit" class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_unit">Unit *</label>
+            <input type="text" id="reg-unit" required placeholder="PP-105" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-xs text-white">
+          </div>
+          <div>
+            <label for="reg-email" class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_email">Email *</label>
+            <input type="email" id="reg-email" required placeholder="you@ex.com" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-xs text-white">
+          </div>
+          <div>
+            <label for="reg-phone" class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_phone">Phone *</label>
+            <input type="tel" id="reg-phone" required placeholder="9800000000" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-xs text-white">
+          </div>
+          <div>
+            <label for="reg-password" class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_password">Password *</label>
+            <input type="password" id="reg-password" required minlength="6" placeholder="••••••••" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-xs text-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_cover">Cover Photo URL / Upload</label>
+            <div class="flex gap-1.5">
+              <input type="text" id="reg-cover-val" placeholder="https://..." value="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-[11px] text-white">
+              <label class="cursor-pointer rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1.5 text-[11px] font-bold text-pink-400 shrink-0 flex items-center gap-1">
+                <i class="fa-solid fa-upload"></i>
+                <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'reg-cover-val')">
+              </label>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_profile">Profile Photo URL / Upload</label>
+            <div class="flex gap-1.5">
+              <input type="text" id="reg-profile-val" placeholder="https://..." value="https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=200&q=80" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-[11px] text-white">
+              <label class="cursor-pointer rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1.5 text-[11px] font-bold text-pink-400 shrink-0 flex items-center gap-1">
+                <i class="fa-solid fa-upload"></i>
+                <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'reg-profile-val')">
+              </label>
+            </div>
+          </div>
+          <div>
+            <label for="reg-desc" class="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="login.reg_desc">Store Description</label>
+            <input type="text" id="reg-desc" placeholder="Briefly describe products..." data-i18n-placeholder="login.reg_desc_placeholder" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2 text-xs text-white">
+          </div>
+        </div>
+
+        <button type="submit" id="signup-submit-btn" class="w-full rounded-xl bg-pink-600 p-3 font-bold text-xs hover:bg-pink-500 transition shadow-lg shadow-pink-600/20 uppercase tracking-wider text-white" data-i18n="login.btn_register">
+          Register Shop & Go to Login
+        </button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<script>
+const SESSION_KEY = 'peoples_plaza_session_v26';
+
+function showAlert(msg, isError = false) {
+  const box = document.getElementById('portal-alert');
+  box.textContent = msg;
+  box.className = `rounded-xl p-3 text-xs font-bold shadow-lg ${isError ? 'bg-red-950/95 border border-red-800 text-red-200' : 'bg-emerald-950/95 border border-emerald-800 text-emerald-200'}`;
+  box.classList.remove('hidden');
+  setTimeout(() => box.classList.add('hidden'), 6000);
+}
+
+function togglePasswordVisibility(inputId, iconId) {
+  const input = document.getElementById(inputId);
+  const icon = document.getElementById(iconId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fa-solid fa-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'fa-solid fa-eye';
+  }
+}
+
+function switchPortalTab(tab) {
+  const loginForm = document.getElementById('login-form');
+  const signupForm = document.getElementById('signup-form');
+  const loginBtn = document.getElementById('tab-login-btn');
+  const signupBtn = document.getElementById('tab-signup-btn');
+
+  if (tab === 'login') {
+    loginForm.classList.remove('hidden');
+    signupForm.classList.add('hidden');
+    loginBtn.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition bg-pink-600 text-white shadow";
+    signupBtn.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition text-slate-400 hover:text-white";
+  } else {
+    loginForm.classList.add('hidden');
+    signupForm.classList.remove('hidden');
+    signupBtn.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition bg-pink-600 text-white shadow";
+    loginBtn.className = "flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition text-slate-400 hover:text-white";
+  }
+}
+
+function compressLocalImage(file, maxWidth = 650, quality = 0.7) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = Math.round((h * maxWidth) / w);
+          w = maxWidth;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleImageUpload(event, targetInputId) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const dataUrl = await compressLocalImage(file, 650, 0.7);
+  document.getElementById(targetInputId).value = dataUrl;
+  showAlert('Photo successfully attached from device!');
+}
+
+async function handleSignup() {
+  const name = document.getElementById('reg-shopname').value.trim();
+  const username = document.getElementById('reg-username').value.trim().toLowerCase();
+  const category = document.getElementById('reg-category').value;
+  const floor = document.getElementById('reg-floor').value;
+  const unit = document.getElementById('reg-unit').value.trim();
+  const email = document.getElementById('reg-email').value.trim().toLowerCase();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const img = document.getElementById('reg-cover-val').value;
+  const profilePhoto = document.getElementById('reg-profile-val').value;
+  const desc = document.getElementById('reg-desc').value.trim() || "Newly registered store at People's Plaza.";
+
+  if (!password || password.length < 6) {
+    showAlert('Password must be at least 6 characters long.', true);
+    return;
+  }
+
+  const signupBtn = document.getElementById('signup-submit-btn');
+  signupBtn.disabled = true;
+  signupBtn.textContent = 'Registering Shop in Database...';
+
+  try {
+    await window.ppSaveUnifiedStore({
+      id: 'shop-' + Date.now(),
+      name,
+      shop_name: name,
+      username,
+      owner_name: username,
+      category,
+      floor,
+      unit,
+      phone,
+      email,
+      registered_email: email,
+      password,
+      desc,
+      description: desc,
+      img,
+      image_url: img,
+      profilePhoto,
+      profile_photo_url: profilePhoto,
+      hours: "10 AM - 8 PM",
+      is_approved: true,
+      status: 'Approved & Live'
+    }, { addToRegistrations: true });
+
+    showAlert('Shop registered and synced with Admin Portal! Redirecting to login...');
+    setTimeout(() => {
+      switchPortalTab('login');
+      document.getElementById('signup-form').reset();
+      document.getElementById('login-identifier').value = username;
+      document.getElementById('login-password').value = '';
+    }, 1000);
+  } catch (err) {
+    showAlert('Registration error: ' + (err.message || 'Please try again.'), true);
+  } finally {
+    signupBtn.disabled = false;
+    signupBtn.textContent = 'Register Shop & Go to Login';
+  }
+}
+
+async function handleLogin() {
+  const identifier = document.getElementById('login-identifier').value.trim().toLowerCase();
+  const password = document.getElementById('login-password').value;
+  const loginBtn = document.getElementById('login-submit-btn');
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Verifying Credentials...';
+
+  try {
+    const validation = await window.ppValidateShopkeeperLogin(identifier, password);
+    if (!validation.ok || !validation.store) {
+      showAlert(validation.message || 'Invalid login credentials. Please check your username and password.', true);
+      return;
+    }
+
+    if (window.ppSafeSetSession) {
+      window.ppSafeSetSession(SESSION_KEY, JSON.stringify(validation.store));
+    } else {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(validation.store));
+    }
+
+    showAlert('Login verified! Redirecting to Shopkeeper Portal...');
+    setTimeout(() => {
+      window.location.href = 'portal.html';
+    }, 500);
+  } catch (err) {
+    showAlert('Authentication error: ' + (err.message || 'Unable to verify credentials.'), true);
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Login to Shop Dashboard';
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  if (window.ppPullSupabaseSystemSync) {
+    await window.ppPullSupabaseSystemSync();
+  }
+  const cms = window.ppGetCMS ? window.ppGetCMS() : null;
+  if (cms && cms.logoUrl) {
+    document.getElementById('portal-brand-logo').src = cms.logoUrl;
+    document.getElementById('portal-login-logo').src = cms.logoUrl;
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>People's Plaza | Shopkeeper Dashboard & Portal</title>
+<link rel="icon" type="image/png" href="/logo-neon-icon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
+<style>
+  body { font-family: Inter, system-ui, sans-serif; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .zoomable-img { transition: transform 0.3s ease; cursor: zoom-in; }
+  .zoomable-img:hover { transform: scale(1.03); }
+</style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 flex flex-col antialiased">
+
+<header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-30">
+  <div class="max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <img id="portal-brand-logo" src="/logo-neon-icon.png" alt="People's Plaza Logo" class="h-10 w-10 rounded-xl object-cover border border-pink-500/40 shadow-lg shadow-pink-600/30" onerror="this.src='/logo-neon-icon.png'">
+      <div>
+        <h1 class="font-extrabold text-base sm:text-lg tracking-tight text-white flex flex-wrap items-center gap-2">
+          <span data-i18n="brand_name">People's Plaza</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-pink-600/20 text-pink-400 text-[10px] font-extrabold uppercase tracking-widest" data-i18n="portal.badge">Shopkeeper Portal</span>
+        </h1>
+        <p class="text-[11px] text-pink-400 font-medium flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span data-i18n="portal.sync_active">Live Two-Way Store & Admin Sync Active</span>
+        </p>
+      </div>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="pp-lang-switcher" role="group" aria-label="Language selector">
+        <button type="button" onclick="window.ppSetLanguage('en')" data-lang-switch="en" class="pp-lang-btn active">EN</button>
+        <button type="button" onclick="window.ppSetLanguage('ne')" data-lang-switch="ne" class="pp-lang-btn">नेपाली</button>
+      </div>
+      <a href="index.html" class="rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-semibold hover:bg-slate-700 transition" data-i18n="login.view_live_site">View Live Site ↗</a>
+      <button onclick="handleLogout()" class="rounded-xl bg-red-600/20 border border-red-600/30 px-3.5 py-2 text-xs font-bold text-red-300 hover:bg-red-600 hover:text-white transition flex items-center gap-1.5">
+        <i class="fa-solid fa-right-from-bracket"></i> <span data-i18n="portal.logout">Logout</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-8 py-5 flex-grow w-full space-y-4">
+  <div id="portal-alert" role="status" aria-live="polite" class="hidden rounded-xl p-3.5 text-xs font-bold shadow-lg"></div>
+
+  <!-- DASHBOARD VIEW -->
+  <section id="dashboard-view" class="space-y-5">
+    <div class="bg-slate-900 border border-slate-800 p-4 sm:p-5 rounded-3xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div>
+          <span id="dash-owner-badge" class="px-2.5 py-0.5 rounded-full bg-pink-600/20 text-pink-400 text-[10px] font-extrabold uppercase tracking-widest" data-i18n="portal.dash_badge">Shopkeeper Dashboard</span>
+          <h2 id="dash-title" class="text-lg font-black text-white mt-0.5" data-i18n="portal.manage_profile">Manage Store Profile</h2>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-800">
+        <button onclick="switchDashTab('main')" id="dash-tab-main" class="dash-btn rounded-xl px-4 py-2 text-xs font-bold bg-pink-600 text-white shadow transition">
+          <i class="fa-solid fa-gauge mr-1.5"></i><span data-i18n="portal.tab_overview">Overview</span>
+        </button>
+        <button onclick="switchDashTab('profile')" id="dash-tab-profile" class="dash-btn rounded-xl px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-store mr-1.5"></i><span data-i18n="portal.tab_edit">Edit Store Details</span>
+        </button>
+        <button onclick="switchDashTab('settings')" id="dash-tab-settings" class="dash-btn rounded-xl px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-lock mr-1.5"></i><span data-i18n="portal.tab_password">Password Settings</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TAB A: OVERVIEW -->
+    <div id="dash-sub-main" class="dash-sub-content active space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-5 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-1">
+          <div class="text-[11px] text-slate-400 uppercase font-bold tracking-wider" data-i18n="portal.status_label">Store Directory Status</div>
+          <div id="dash-status-text" class="text-lg font-black text-emerald-400" data-i18n="portal.status_active">Active & Live on Explore</div>
+        </div>
+        <div class="p-5 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-1">
+          <div class="text-[11px] text-slate-400 uppercase font-bold tracking-wider" data-i18n="portal.sync_label">Two-Way Syncing</div>
+          <div class="text-lg font-black text-pink-400" data-i18n="portal.sync_val">Active with Admin & Website</div>
+        </div>
+        <div class="p-5 rounded-3xl bg-slate-900 border border-slate-800 shadow-xl space-y-1">
+          <div class="text-[11px] text-slate-400 uppercase font-bold tracking-wider" data-i18n="portal.unit_label">Assigned Unit & Floor</div>
+          <div id="dash-overview-unit" class="text-lg font-black text-purple-300">Ground Floor · PP-101</div>
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8 shadow-2xl space-y-5">
+        <h3 class="text-base font-extrabold uppercase tracking-wider text-pink-400" data-i18n="portal.visual_summary">Quick Store Visual Summary</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2.5">
+            <span class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-image text-pink-400"></i> <span data-i18n="portal.cover_photo_zoom">Cover Banner Photo (Zoomable)</span>
+            </span>
+            <div class="h-64 sm:h-72 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-2xl relative group">
+              <img id="summary-cover-img" src="" alt="Cover Photo" class="w-full h-full object-cover zoomable-img" onclick="openLightbox(this.src)">
+              <div class="absolute bottom-2.5 right-2.5 bg-black/75 px-2.5 py-1 rounded-lg text-[10px] text-white font-semibold pointer-events-none" data-i18n="click_to_zoom">Click to Zoom</div>
+            </div>
+          </div>
+          <div class="space-y-2.5">
+            <span class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+              <i class="fa-solid fa-user-circle text-pink-400"></i> <span data-i18n="portal.profile_photo_zoom">Profile Avatar Photo (Zoomable)</span>
+            </span>
+            <div class="h-64 sm:h-72 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center shadow-2xl relative group">
+              <img id="summary-profile-img" src="" alt="Profile Photo" class="w-full h-full object-cover zoomable-img" onclick="openLightbox(this.src)">
+              <div class="absolute bottom-2.5 right-2.5 bg-black/75 px-2.5 py-1 rounded-lg text-[10px] text-white font-semibold pointer-events-none" data-i18n="click_to_zoom">Click to Zoom</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB B: EDIT STORE DETAILS -->
+    <form id="dash-sub-profile" class="dash-sub-content space-y-4 rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl hidden" onsubmit="event.preventDefault(); saveShopChanges();">
+      <input type="hidden" id="dash-store-id">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label for="dash-name" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.shop_name">Shop Name *</label>
+          <input type="text" id="dash-name" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs focus:border-pink-500 focus:outline-none">
+        </div>
+        <div>
+          <label for="dash-name-ne" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.shop_name_ne">Shop Name (Nepali / नेपाली)</label>
+          <input type="text" id="dash-name-ne" placeholder="जस्तै: जारा फेसन हब" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs focus:border-pink-500 focus:outline-none">
+        </div>
+        <div>
+          <label for="dash-username" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.username">Username (Login ID)</label>
+          <input type="text" id="dash-username" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-slate-200 text-xs focus:border-pink-500 focus:outline-none">
+        </div>
+        <div>
+          <label for="dash-category" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.category">Category *</label>
+          <select id="dash-category" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs focus:border-pink-500 focus:outline-none">
+            <option value="Fashion" data-i18n="cat_fashion">Fashion</option>
+            <option value="Footwear" data-i18n="cat_footwear">Footwear</option>
+            <option value="Cosmetics" data-i18n="cat_cosmetics">Cosmetics</option>
+            <option value="Electronics" data-i18n="cat_electronics">Electronics</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label for="dash-floor" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.floor_level">Floor Level *</label>
+          <select id="dash-floor" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs focus:border-pink-500 focus:outline-none">
+            <option value="Ground Floor" data-i18n="floor.ground">Ground Floor</option>
+            <option value="1st Floor" data-i18n="floor.1st">1st Floor</option>
+            <option value="2nd Floor" data-i18n="floor.2nd">2nd Floor</option>
+            <option value="3rd Floor" data-i18n="floor.3rd">3rd Floor</option>
+            <option value="4th Floor" data-i18n="floor.4th">4th Floor</option>
+            <option value="5th Floor" data-i18n="floor.5th">5th Floor</option>
+          </select>
+        </div>
+        <div>
+          <label for="dash-unit" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.unit_no">Unit / Stall No *</label>
+          <input type="text" id="dash-unit" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs focus:border-pink-500 focus:outline-none">
+        </div>
+        <div>
+          <label for="dash-phone" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.contact_phone">Contact Phone *</label>
+          <input type="tel" id="dash-phone" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs focus:border-pink-500 focus:outline-none">
+        </div>
+        <div>
+          <label for="dash-email" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.email_addr">Email Address *</label>
+          <input type="email" id="dash-email" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs focus:border-pink-500 focus:outline-none">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.cover_url">Cover Photo URL / Upload</label>
+          <div class="flex gap-2">
+            <input type="text" id="dash-cover-val" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs text-white">
+            <label class="cursor-pointer rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 text-xs font-bold text-pink-400 shrink-0 flex items-center gap-1.5">
+              <i class="fa-solid fa-upload"></i> <span data-i18n="portal.attach">Attach</span>
+              <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'dash-cover-val')">
+            </label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.profile_url">Profile Avatar Photo URL / Upload</label>
+          <div class="flex gap-2">
+            <input type="text" id="dash-profile-val" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs text-white">
+            <label class="cursor-pointer rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-2 text-xs font-bold text-pink-400 shrink-0 flex items-center gap-1.5">
+              <i class="fa-solid fa-upload"></i> <span data-i18n="portal.attach">Attach</span>
+              <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, 'dash-profile-val')">
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="dash-desc" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.store_desc">Store Description & Products *</label>
+          <textarea id="dash-desc" rows="3" required class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs leading-relaxed focus:border-pink-500 focus:outline-none"></textarea>
+        </div>
+        <div>
+          <label for="dash-desc-ne" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1" data-i18n="portal.store_desc_ne">Store Description (Nepali / नेपाली)</label>
+          <textarea id="dash-desc-ne" rows="3" placeholder="पसलको संक्षिप्त विवरण नेपालीमा..." class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs leading-relaxed focus:border-pink-500 focus:outline-none"></textarea>
+        </div>
+      </div>
+
+      <button type="submit" id="save-profile-btn" class="w-full rounded-xl bg-pink-600 p-3.5 font-bold text-xs hover:bg-pink-500 transition shadow-lg shadow-pink-600/25 uppercase tracking-wider text-white" data-i18n="portal.btn_save_sync">
+        Save Details & Sync Homepage
+      </button>
+    </form>
+
+    <!-- TAB C: PASSWORD SETTINGS -->
+    <form id="dash-sub-settings" class="dash-sub-content space-y-4 max-w-lg mx-auto rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl hidden" onsubmit="event.preventDefault(); changePassword();">
+      <div class="space-y-1">
+        <h3 class="text-sm font-extrabold text-white uppercase tracking-wider" data-i18n="portal.pwd_sec_title">Account Password Security</h3>
+        <p class="text-xs text-slate-400" data-i18n="portal.pwd_sec_sub">Update your shop account password securely.</p>
+      </div>
+      <div>
+        <label for="new-password" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5" data-i18n="portal.new_pwd">New Password (Min 6 chars) *</label>
+        <input type="password" id="new-password" required minlength="6" placeholder="Enter new password" data-i18n-placeholder="portal.new_pwd_placeholder" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs focus:border-pink-500 focus:outline-none">
+      </div>
+      <div>
+        <label for="confirm-password" class="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5" data-i18n="portal.confirm_pwd">Confirm Password *</label>
+        <input type="password" id="confirm-password" required minlength="6" placeholder="Re-enter new password" data-i18n-placeholder="portal.confirm_pwd_placeholder" class="w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-xs focus:border-pink-500 focus:outline-none">
+      </div>
+
+      <div class="space-y-2 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+        <label class="block text-xs font-bold text-slate-300 uppercase tracking-wider" data-i18n="portal.captcha_label">Security Verification Captcha *</label>
+        <div class="flex items-center gap-3">
+          <div id="captcha-code-box" class="px-4 py-2 bg-slate-900 border border-slate-700 rounded-xl font-mono text-base font-black text-pink-400 tracking-widest select-none">4829</div>
+          <button type="button" onclick="generateCaptcha()" class="text-slate-400 hover:text-white text-xs font-semibold underline" data-i18n="portal.captcha_refresh">Refresh</button>
+        </div>
+        <input type="text" id="captcha-input" required placeholder="Enter captcha code above" data-i18n-placeholder="portal.captcha_placeholder" class="w-full rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-white text-xs focus:border-pink-500 focus:outline-none">
+      </div>
+
+      <button type="submit" id="update-password-btn" class="w-full rounded-xl bg-pink-600 p-3.5 font-bold text-xs hover:bg-pink-500 transition shadow-lg text-white uppercase tracking-wider" data-i18n="portal.btn_update_pwd">
+        Update Password
+      </button>
+    </form>
+  </section>
+</main>
+
+<!-- LIGHTBOX MODAL FOR ZOOMED IMAGES -->
+<div id="lightbox-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4" onclick="closeLightbox()">
+  <div class="relative max-w-4xl max-h-[90vh]">
+    <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white text-2xl font-bold hover:text-pink-400 transition">✕</button>
+    <img id="lightbox-img" src="" alt="Zoomed view" class="max-w-full max-h-[85vh] rounded-2xl border-2 border-pink-500/50 shadow-2xl object-contain">
+  </div>
+</div>
+
+<script>
+const SESSION_KEY = 'peoples_plaza_session_v26';
+let currentCaptcha = "4829";
+
+function getSupabase() {
+  return window.ppSupabase || null;
+}
+
+function showAlert(msg, isError = false) {
+  const box = document.getElementById('portal-alert');
+  box.textContent = msg;
+  box.className = `rounded-xl p-3.5 text-xs font-bold shadow-lg ${isError ? 'bg-red-950/95 border border-red-800 text-red-200' : 'bg-emerald-950/95 border border-emerald-800 text-emerald-200'}`;
+  box.classList.remove('hidden');
+  setTimeout(() => box.classList.add('hidden'), 5000);
+}
+
+function openLightbox(url) {
+  const modal = document.getElementById('lightbox-modal');
+  const img = document.getElementById('lightbox-img');
+  img.src = url;
+  modal.classList.remove('hidden');
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox-modal').classList.add('hidden');
+}
+
+function generateCaptcha() {
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
+  currentCaptcha = code;
+  const box = document.getElementById('captcha-code-box');
+  if (box) box.textContent = code;
+}
+
+function switchDashTab(tabId) {
+  document.querySelectorAll('.dash-sub-content').forEach(el => el.classList.add('hidden'));
+  document.querySelectorAll('.dash-btn').forEach(btn => {
+    btn.className = 'dash-btn rounded-xl px-4 py-2 text-xs font-bold text-slate-400 hover:text-white transition';
+  });
+  document.getElementById(`dash-sub-${tabId}`).classList.remove('hidden');
+  const activeBtn = document.getElementById(`dash-tab-${tabId}`);
+  activeBtn.className = 'dash-btn rounded-xl px-4 py-2 text-xs font-bold bg-pink-600 text-white shadow transition';
+}
+
+function compressLocalImage(file, maxWidth = 650, quality = 0.7) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = Math.round((h * maxWidth) / w);
+          w = maxWidth;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleImageUpload(event, targetInputId) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const dataUrl = await compressLocalImage(file, 650, 0.7);
+  document.getElementById(targetInputId).value = dataUrl;
+  showAlert('Photo successfully attached from device!');
+}
+
+function handleLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  const db = getSupabase();
+  if (db) db.auth.signOut().catch(() => {});
+  window.location.href = 'login.html';
+}
+
+async function loadDashboard() {
+  let session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+  if (!session) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  if (window.ppGetMergedData) {
+    const { allStores, allRegistrations } = await window.ppGetMergedData();
+    const found = [...allStores, ...allRegistrations].find(s => 
+      String(s.id) === String(session.id) ||
+      (s.email && session.email && s.email.toLowerCase() === session.email.toLowerCase()) ||
+      (s.username && session.username && s.username.toLowerCase() === session.username.toLowerCase()) ||
+      (s.unit && session.unit && s.unit.toLowerCase() === session.unit.toLowerCase())
+    );
+    if (found) {
+      session = { ...session, ...found, password: found.password || session.password };
+      if (window.ppSafeSetSession) {
+        window.ppSafeSetSession(SESSION_KEY, JSON.stringify(session));
+      }
+    }
+  }
+
+  const norm = window.ppNormalizeStore ? window.ppNormalizeStore(session) : session;
+  const tStore = window.ppTranslateStore ? window.ppTranslateStore(norm) : norm;
+  const avatarUrl = norm.profilePhoto || norm.profile_photo_url || norm.img || norm.image_url || '/logo-neon-icon.png';
+  const coverUrl = norm.img || norm.image_url || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=600&q=80';
+
+  document.getElementById('summary-cover-img').src = coverUrl;
+  document.getElementById('summary-profile-img').src = avatarUrl;
+
+  const shopPrefix = window.ppT ? window.ppT('shop.name', 'Shop') : 'Shop';
+  document.getElementById('dash-owner-badge').textContent = `${shopPrefix}: ${tStore.name} (${norm.unit || 'PP-101'})`;
+  document.getElementById('dash-overview-unit').textContent = `${tStore.floor || 'Ground Floor'} · ${norm.unit || 'PP-101'}`;
+  const statusActiveText = window.ppT ? window.ppT('portal.status_active', 'Active & Live on Explore') : 'Active & Live on Explore';
+  const statusHiddenText = window.ppT ? window.ppT('portal.status_hidden', 'Hidden by Admin') : 'Hidden by Admin';
+  document.getElementById('dash-status-text').textContent = norm.is_hidden ? statusHiddenText : statusActiveText;
+
+  document.getElementById('dash-store-id').value = norm.id || '';
+  document.getElementById('dash-name').value = norm.name_en || norm.name || '';
+  const nameNeInput = document.getElementById('dash-name-ne');
+  if (nameNeInput) nameNeInput.value = norm.name_ne || '';
+  document.getElementById('dash-username').value = norm.username || '';
+  document.getElementById('dash-category').value = norm.category || 'Fashion';
+  document.getElementById('dash-floor').value = norm.floor || 'Ground Floor';
+  document.getElementById('dash-unit').value = norm.unit || 'PP-101';
+  document.getElementById('dash-phone').value = norm.phone || '';
+  document.getElementById('dash-email').value = norm.email || norm.registered_email || '';
+  document.getElementById('dash-desc').value = norm.description_en || norm.desc || norm.description || '';
+  const descNeInput = document.getElementById('dash-desc-ne');
+  if (descNeInput) descNeInput.value = norm.description_ne || '';
+  document.getElementById('dash-cover-val').value = coverUrl;
+  document.getElementById('dash-profile-val').value = avatarUrl;
+}
+
+async function saveShopChanges() {
+  const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+  if (!session) {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const saveBtn = document.getElementById('save-profile-btn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Syncing Changes Live...';
+
+  try {
+    const newCover = document.getElementById('dash-cover-val').value.trim() || session.img;
+    const newAvatar = document.getElementById('dash-profile-val').value.trim() || session.profilePhoto || session.img;
+    const nameEn = document.getElementById('dash-name').value.trim();
+    const nameNe = (document.getElementById('dash-name-ne') ? document.getElementById('dash-name-ne').value.trim() : '') || session.name_ne || '';
+    const descEn = document.getElementById('dash-desc').value.trim();
+    const descNe = (document.getElementById('dash-desc-ne') ? document.getElementById('dash-desc-ne').value.trim() : '') || session.description_ne || '';
+
+    const payload = {
+      ...session,
+      id: document.getElementById('dash-store-id').value || session.id,
+      name: nameEn,
+      name_en: nameEn,
+      name_ne: nameNe,
+      shop_name: nameEn,
+      username: document.getElementById('dash-username').value.trim().toLowerCase() || session.username,
+      category: document.getElementById('dash-category').value,
+      floor: document.getElementById('dash-floor').value,
+      unit: document.getElementById('dash-unit').value.trim(),
+      phone: document.getElementById('dash-phone').value.trim(),
+      email: document.getElementById('dash-email').value.trim().toLowerCase(),
+      registered_email: document.getElementById('dash-email').value.trim().toLowerCase(),
+      desc: descEn,
+      description: descEn,
+      description_en: descEn,
+      description_ne: descNe,
+      img: newCover,
+      image_url: newCover,
+      profilePhoto: newAvatar,
+      profile_photo_url: newAvatar
+    };
+
+    const updated = await window.ppSaveUnifiedStore(payload, { addToRegistrations: true });
+    if (window.ppSafeSetSession) {
+      window.ppSafeSetSession(SESSION_KEY, JSON.stringify(updated));
+    }
+    await loadDashboard();
+    showAlert('Store details committed to Supabase and synced live across Website & Admin Portal!');
+  } catch (err) {
+    showAlert('Error saving store details: ' + (err.message || 'Please try again.'), true);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = window.ppT ? window.ppT('portal.btn_save_sync', 'Save Details & Sync Homepage') : 'Save Details & Sync Homepage';
+  }
+}
+
+async function changePassword() {
+  const p1 = document.getElementById('new-password').value;
+  const p2 = document.getElementById('confirm-password').value;
+  const cap = document.getElementById('captcha-input').value.trim();
+  const btn = document.getElementById('update-password-btn');
+
+  if (p1 !== p2) {
+    showAlert('New passwords do not match. Please re-enter.', true);
+    return;
+  }
+  if (cap !== currentCaptcha) {
+    showAlert('Incorrect security captcha code. Please try again.', true);
+    generateCaptcha();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Updating Password in Database...';
+
+  try {
+    const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+    if (session) {
+      await window.ppUpdatePasswordInDatabase(session.email, session.unit, p1);
+      session.password = p1;
+      if (window.ppSafeSetSession) {
+        window.ppSafeSetSession(SESSION_KEY, JSON.stringify(session));
+      }
+    }
+    showAlert('Password updated successfully and synced with Supabase database!');
+    document.getElementById('new-password').value = "";
+    document.getElementById('confirm-password').value = "";
+    document.getElementById('captcha-input').value = "";
+    generateCaptcha();
+  } catch (err) {
+    showAlert('Error updating password: ' + (err.message || 'Try again.'), true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = window.ppT ? window.ppT('portal.btn_update_pwd', 'Update Password') : 'Update Password';
+  }
+}
+
+let isSavingOrLoading = false;
+window.addEventListener('DOMContentLoaded', async () => {
+  if (window.ppPullSupabaseSystemSync) {
+    await window.ppPullSupabaseSystemSync();
+  }
+  const cms = window.ppGetCMS ? window.ppGetCMS() : null;
+  if (cms && cms.logoUrl) {
+    document.getElementById('portal-brand-logo').src = cms.logoUrl;
+  }
+
+  const existingSession = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+  if (!existingSession) {
+    window.location.href = 'login.html';
+  } else {
+    await loadDashboard();
+  }
+  generateCaptcha();
+
+  if (window.ppOnLanguageChange) {
+    window.ppOnLanguageChange(() => {
+      loadDashboard();
+    });
+  }
+
+  if (window.ppOnSync) {
+    window.ppOnSync((ev) => {
+      if (isSavingOrLoading) return;
+      isSavingOrLoading = true;
+      loadDashboard().finally(() => { isSavingOrLoading = false; });
+    });
+  }
+});
+</script>
+</body>
+</html>

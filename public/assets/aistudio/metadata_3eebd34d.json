@@ -1,0 +1,6 @@
+{
+  "name": "People's Plaza Kathmandu",
+  "description": "Kathmandu’s Preferred Shopping & Lifestyle Hub in New Road, Khichapokhari. Explore store directory, shopkeeper portal, and live CMS admin management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

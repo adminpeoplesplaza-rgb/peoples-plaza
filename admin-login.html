@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Login | People's Plaza</title>
+<link rel="icon" type="image/png" href="/peoples-plaza-logo.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen bg-slate-950 text-white flex items-center justify-center p-4">
+<main class="w-full max-w-md rounded-3xl border border-fuchsia-900 bg-slate-900 p-6 sm:p-8 shadow-2xl">
+  <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+    <a href="index.html" class="text-pink-300 hover:underline font-semibold" data-i18n="admin_login.back_home">← Back to People's Plaza</a>
+    <div class="flex items-center gap-2">
+      <div class="pp-lang-switcher" role="group" aria-label="Language selector">
+        <button type="button" onclick="window.ppSetLanguage('en')" data-lang-switch="en" class="pp-lang-btn active">EN</button>
+        <button type="button" onclick="window.ppSetLanguage('ne')" data-lang-switch="ne" class="pp-lang-btn">नेपाली</button>
+      </div>
+      <a href="login.html" class="text-slate-400 hover:text-white" data-i18n="admin_login.shop_portal">Shop Portal →</a>
+    </div>
+  </div>
+  <div class="text-center mt-5 mb-6">
+      <img id="admin-login-logo" src="/peoples-plaza-logo.png" alt="People's Plaza Logo" class="mx-auto mb-3 h-16 w-auto object-contain" onerror="this.onerror=null;this.src=window.PP_LOGO_DATA_URL||'peoples-plaza-logo.png'">
+      <p class="text-pink-300 text-sm mt-1 font-medium" data-i18n="admin_login.subtitle">Administrator Login Portal</p>
+  </div>
+  <form id="admin-login-form" class="space-y-4">
+      <label class="block text-xs font-bold uppercase tracking-wider text-slate-300"><span data-i18n="admin_login.email_label">Admin Email</span>
+          <input id="admin-email" type="email" required autocomplete="username" value="adminpeoplesplaza@gmail.com" class="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-sm focus:border-pink-500 focus:outline-none" placeholder="adminpeoplesplaza@gmail.com">
+      </label>
+      <label class="block text-xs font-bold uppercase tracking-wider text-slate-300"><span data-i18n="admin_login.password_label">Password</span>
+          <input id="admin-password" type="password" required autocomplete="current-password" class="mt-1.5 w-full rounded-xl border border-slate-700 bg-slate-950 p-3 text-white text-sm focus:border-pink-500 focus:outline-none" placeholder="Enter admin password" data-i18n-placeholder="admin_login.password_placeholder">
+      </label>
+      <div class="flex justify-end">
+          <a href="forgot-password.html?role=admin" class="text-xs text-pink-400 hover:underline font-semibold" data-i18n="admin_login.forgot_link">Forgot Admin Password?</a>
+      </div>
+      <button class="w-full rounded-xl bg-pink-600 p-3.5 font-bold text-sm hover:bg-pink-500 transition shadow-lg shadow-pink-600/20" type="submit" data-i18n="admin_login.btn_submit">Login to Admin Panel</button>
+      <div id="login-message" role="status" aria-live="polite" class="text-center text-xs text-red-300 mt-2 whitespace-pre-wrap"></div>
+  </form>
+</main>
+
+<script>
+const ADMIN_SESSION_KEY = "peoples_plaza_admin_session_v26";
+const form = document.getElementById("admin-login-form");
+const message = document.getElementById("login-message");
+const submitButton = form.querySelector("button[type=\"submit\"]");
+
+window.addEventListener("DOMContentLoaded", async () => {
+  if (window.ppPullSupabaseSystemSync) {
+    await window.ppPullSupabaseSystemSync();
+  }
+  const cms = window.ppGetCMS ? window.ppGetCMS() : null;
+  if (cms && cms.logoUrl) {
+    document.getElementById("admin-login-logo").src = cms.logoUrl;
+  }
+});
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  message.textContent = "";
+  message.className = "text-center text-xs text-red-300 mt-2 whitespace-pre-wrap";
+
+  const email = document.getElementById("admin-email").value.trim().toLowerCase();
+  const password = document.getElementById("admin-password").value;
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Verifying with Supabase Auth…";
+
+  try {
+    const authResult = await window.ppValidateAdminLogin(email, password);
+    if (!authResult.ok) {
+      message.textContent = authResult.message || "Invalid admin credentials. Access denied.";
+      return;
+    }
+
+    sessionStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+      email,
+      verified: true,
+      loggedInAt: new Date().toISOString()
+    }));
+    message.className = "text-center text-xs text-emerald-300 mt-2 font-semibold";
+    message.textContent = "Authenticated! Redirecting to Admin Dashboard…";
+    window.location.href = "admin.html";
+  } catch (error) {
+    message.textContent = "Login error: " + (error.message || "Check credentials");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Login to Admin Panel";
+  }
+});
+</script>
+</body>
+</html>
